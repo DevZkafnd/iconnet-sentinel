@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -42,14 +42,15 @@ import {
   Linkedin,
   Twitter,
   Newspaper,
-  Download,
   AlertTriangle,
   Users,
   Target,
   ExternalLink,
   Calendar,
   Tag,
-  Languages
+  Languages,
+  Download,
+  Loader2
 } from 'lucide-react';
 import { 
   daftarDirektur, 
@@ -67,6 +68,7 @@ import Link from 'next/link';
 
 export default function Dashboard() {
   const [language, setLanguage] = useState<'id' | 'en'>('id');
+  const [isExporting, setIsExporting] = useState(false);
   const t = translations[language];
 
   const [selectedDirector, setSelectedDirector] = useState<Direktur>(daftarDirektur[0]);
@@ -85,34 +87,6 @@ export default function Dashboard() {
   const [directorSearchKeyword, setDirectorSearchKeyword] = useState("");
   const [directorSelectedPlatform, setDirectorSelectedPlatform] = useState("all");
   const [directorSelectedSentiment, setDirectorSelectedSentiment] = useState("all");
-
-  useEffect(() => {
-    const startPrintMode = () => {
-      document.documentElement.setAttribute('data-exporting-pdf', 'true');
-      window.dispatchEvent(new Event('resize'));
-    };
-
-    const stopPrintMode = () => {
-      document.documentElement.removeAttribute('data-exporting-pdf');
-      window.dispatchEvent(new Event('resize'));
-    };
-
-    window.addEventListener('beforeprint', startPrintMode);
-    window.addEventListener('afterprint', stopPrintMode);
-
-    const mediaQueryList = window.matchMedia('print');
-    const onMediaChange = (e: MediaQueryListEvent) => {
-      if (e.matches) startPrintMode();
-      else stopPrintMode();
-    };
-    mediaQueryList.addEventListener?.('change', onMediaChange);
-
-    return () => {
-      window.removeEventListener('beforeprint', startPrintMode);
-      window.removeEventListener('afterprint', stopPrintMode);
-      mediaQueryList.removeEventListener?.('change', onMediaChange);
-    };
-  }, []);
 
   // Memoize data
   const trendData = useMemo(() => dapatkanDataTren(selectedDirector.id), [selectedDirector.id]);
@@ -231,6 +205,7 @@ export default function Dashboard() {
   };
 
   const handleExportPDF = async () => {
+    setIsExporting(true);
     document.documentElement.setAttribute('data-exporting-pdf', 'true');
 
     // Give charts time to resize/re-render
@@ -244,6 +219,15 @@ export default function Dashboard() {
     await new Promise(resolve => setTimeout(resolve, 800));
 
     window.print();
+
+    // Cleanup after print dialog closes (this runs after user interaction)
+    // Note: In some browsers, this might run immediately if they don't block.
+    // Ideally we would use window.matchMedia('print').addListener but for simplicity:
+    setTimeout(() => {
+        document.documentElement.removeAttribute('data-exporting-pdf');
+        setIsExporting(false);
+        window.dispatchEvent(new Event('resize'));
+    }, 500);
   };
 
   return (
@@ -319,6 +303,26 @@ export default function Dashboard() {
           pointer-events: none !important;
         }
       `}} />
+      
+      {/* Loading Overlay for Export */}
+      {isExporting && (
+        <div className="fixed inset-0 z-[9999] bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center print:hidden">
+          <div className="bg-white p-8 rounded-2xl shadow-xl border border-slate-100 flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
+            <div className="relative">
+              <div className="h-16 w-16 rounded-full border-4 border-slate-100 border-t-[#005F99] animate-spin"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 text-[#005F99] animate-pulse" />
+              </div>
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-bold text-slate-800">Menyiapkan PDF...</h3>
+              <p className="text-sm text-slate-500 max-w-xs">
+                Sedang mengoptimalkan resolusi grafik untuk hasil cetak terbaik. Mohon tunggu sebentar.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Topbar */}
       <header className="bg-white border-b border-slate-200 h-16 flex items-center px-4 lg:px-8 justify-between sticky top-0 z-50 shadow-sm print:hidden">
