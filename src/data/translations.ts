@@ -38,6 +38,8 @@ export const translations = {
     
     verbatimTitle: "Umpan Berita Verbatim",
     verbatimDesc: "Sebutan real-time lintas platform",
+    verbatimDescDirector: "Sebutan terbaru tentang",
+    noData: "Tidak ada data ditemukan.",
     
     // Competitors
     compAnalysisTitle: "Analisis Sentimen Kompetitor",
@@ -58,6 +60,17 @@ export const translations = {
     topPosNews: "Top 10 Berita Positif",
     topNegNews: "Top 10 Berita Negatif",
     
+    // Filters
+    filterKeyword: "Cari kata kunci...",
+    filterPlatform: "Platform",
+    filterProduct: "Produk",
+    filterSentiment: "Sentimen",
+    all: "Semua",
+    news: "Berita",
+    socialMedia: "Media Sosial",
+    allProducts: "Semua Produk",
+    allSentiments: "Semua Sentimen",
+
     // Legend / Labels
     positive: "Positif",
     neutral: "Netral",
@@ -102,6 +115,8 @@ export const translations = {
     
     verbatimTitle: "Verbatim News Feed",
     verbatimDesc: "Real-time mentions across platforms",
+    verbatimDescDirector: "Latest mentions about",
+    noData: "No data found.",
     
     // Competitors
     compAnalysisTitle: "Competitor Sentiment Analysis",
@@ -122,6 +137,17 @@ export const translations = {
     topPosNews: "Top 10 Positive News",
     topNegNews: "Top 10 Negative News",
     
+    // Filters
+    filterKeyword: "Search keywords...",
+    filterPlatform: "Platform",
+    filterProduct: "Product",
+    filterSentiment: "Sentiment",
+    all: "All",
+    news: "News",
+    socialMedia: "Social Media",
+    allProducts: "All Products",
+    allSentiments: "All Sentiments",
+
     // Legend / Labels
     positive: "Positive",
     neutral: "Neutral",

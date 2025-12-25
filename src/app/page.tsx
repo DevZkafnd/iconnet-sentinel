@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -80,14 +81,55 @@ export default function Dashboard() {
   const [datePeriod] = useState("1 Januari 2024 - 31 Januari 2024");
   const [keywords] = useState(["ICONNET", "PLN Icon Plus", "Internet WiFi", "Gangguan Jaringan", "Layanan Pelanggan", "Pasang Baru"]);
 
+  // Global Filter States (Overview)
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [selectedPlatform, setSelectedPlatform] = useState("all");
+  const [selectedProduct, setSelectedProduct] = useState("all");
+  const [selectedSentiment, setSelectedSentiment] = useState("all");
+
+  // Director Tab Filter States
+  const [directorSearchKeyword, setDirectorSearchKeyword] = useState("");
+  const [directorSelectedPlatform, setDirectorSelectedPlatform] = useState("all");
+  const [directorSelectedSentiment, setDirectorSelectedSentiment] = useState("all");
+
   // Memoize data
   const trendData = useMemo(() => getTrendData(selectedDirector.id), [selectedDirector.id]);
   
   const corporateNewsList = useMemo(() => {
-    // Return all news for overview, but ensure we have enough diversity
+    let filtered = [...newsFeed];
+
+    // Apply filters
+    if (searchKeyword) {
+      const lower = searchKeyword.toLowerCase();
+      filtered = filtered.filter(item => 
+        item.title.toLowerCase().includes(lower) || 
+        item.source.toLowerCase().includes(lower)
+      );
+    }
+
+    if (selectedPlatform !== 'all') {
+      const newsPlatforms = ['News', 'Intranet', 'Internal'];
+      if (selectedPlatform === 'news') {
+         filtered = filtered.filter(item => newsPlatforms.includes(item.platform));
+      } else {
+         filtered = filtered.filter(item => !newsPlatforms.includes(item.platform));
+      }
+    }
+
+    if (selectedProduct !== 'all') {
+      filtered = filtered.filter(item => {
+        const dir = directors.find(d => d.id === item.directorId);
+        return dir && dir.product === selectedProduct;
+      });
+    }
+
+    if (selectedSentiment !== 'all') {
+      filtered = filtered.filter(item => item.sentiment === selectedSentiment);
+    }
+
     // Sort by date (mock) or id descending to show "latest"
-    return newsFeed.sort((a, b) => b.id - a.id);
-  }, []);
+    return filtered.sort((a, b) => b.id - a.id);
+  }, [searchKeyword, selectedPlatform, selectedProduct, selectedSentiment]);
 
   const sentimentCounts = useMemo(() => {
     const counts = { positive: 0, neutral: 0, negative: 0 };
@@ -114,10 +156,33 @@ export default function Dashboard() {
   }, [corporateNewsList]);
 
   const directorNewsList = useMemo(() => {
-    const directorNews = newsFeed.filter(news => news.directorId === selectedDirector.id);
+    let directorNews = newsFeed.filter(news => news.directorId === selectedDirector.id);
+    
+    // Apply Director Tab Filters
+    if (directorSearchKeyword) {
+      const lower = directorSearchKeyword.toLowerCase();
+      directorNews = directorNews.filter(item => 
+        item.title.toLowerCase().includes(lower) || 
+        item.source.toLowerCase().includes(lower)
+      );
+    }
+    
+    if (directorSelectedPlatform !== 'all') {
+      const newsPlatforms = ['News', 'Intranet', 'Internal'];
+      if (directorSelectedPlatform === 'news') {
+         directorNews = directorNews.filter(item => newsPlatforms.includes(item.platform));
+      } else {
+         directorNews = directorNews.filter(item => !newsPlatforms.includes(item.platform));
+      }
+    }
+
+    if (directorSelectedSentiment !== 'all') {
+      directorNews = directorNews.filter(item => item.sentiment === directorSelectedSentiment);
+    }
+
     // Sort by id descending
     return directorNews.sort((a, b) => b.id - a.id);
-  }, [selectedDirector.id]);
+  }, [selectedDirector.id, directorSearchKeyword, directorSelectedPlatform, directorSelectedSentiment]);
 
   const directorSentimentData = useMemo(() => [
     { name: t.positive, value: selectedDirector.stats.positive, color: '#10B981' }, // Success Green
@@ -137,6 +202,9 @@ export default function Dashboard() {
       case 'Facebook': return <Facebook className="h-4 w-4 text-blue-600" />;
       case 'LinkedIn': return <Linkedin className="h-4 w-4 text-blue-700" />;
       case 'Twitter': return <Twitter className="h-4 w-4 text-sky-500" />;
+      case 'YouTube': return <ExternalLink className="h-4 w-4 text-red-600" />;
+      case 'Google Review': return <MessageSquare className="h-4 w-4 text-orange-500" />;
+      case 'Play Store Review': return <MessageSquare className="h-4 w-4 text-green-600" />;
       default: return <Newspaper className="h-4 w-4 text-slate-500" />;
     }
   };
@@ -275,6 +343,56 @@ export default function Dashboard() {
 
             {/* OVERVIEW TAB */}
             <TabsContent value="overview" className="space-y-6">
+              {/* Global Filters */}
+              <Card className="border-slate-200 shadow-sm p-4 no-print">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input 
+                      placeholder={t.filterKeyword} 
+                      className="pl-9" 
+                      value={searchKeyword}
+                      onChange={(e) => setSearchKeyword(e.target.value)}
+                    />
+                  </div>
+                  <div className="w-full md:w-48">
+                    <select 
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      value={selectedPlatform}
+                      onChange={(e) => setSelectedPlatform(e.target.value)}
+                    >
+                      <option value="all">{t.all} {t.filterPlatform}</option>
+                      <option value="news">{t.news}</option>
+                      <option value="social">{t.socialMedia}</option>
+                    </select>
+                  </div>
+                  <div className="w-full md:w-64">
+                    <select 
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      value={selectedProduct}
+                      onChange={(e) => setSelectedProduct(e.target.value)}
+                    >
+                      <option value="all">{t.allProducts}</option>
+                      {directors.map(d => (
+                        <option key={d.id} value={d.product}>{d.product} ({d.name})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-full md:w-48">
+                    <select 
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      value={selectedSentiment}
+                      onChange={(e) => setSelectedSentiment(e.target.value)}
+                    >
+                      <option value="all">{t.allSentiments}</option>
+                      <option value="positive">{t.positive}</option>
+                      <option value="negative">{t.negative}</option>
+                      <option value="neutral">{t.neutral}</option>
+                    </select>
+                  </div>
+                </div>
+              </Card>
+
               {/* Alert System */}
               {corporateStats.sentimentScore < 50 && (
                 <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800">
@@ -723,8 +841,42 @@ export default function Dashboard() {
                    {/* Verbatim News Feed for Director */}
                    <Card className="lg:col-span-2 border-slate-200 shadow-sm">
                      <CardHeader>
-                       <CardTitle className="text-lg font-bold text-slate-800">Verbatim News Feed</CardTitle>
-                       <CardDescription>Mentions terbaru tentang {selectedDirector.name}</CardDescription>
+                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                         <div>
+                            <CardTitle className="text-lg font-bold text-slate-800">{t.verbatimTitle}</CardTitle>
+                            <CardDescription>{t.verbatimDescDirector} {selectedDirector.name}</CardDescription>
+                          </div>
+                         <div className="flex gap-2 no-print">
+                            <div className="relative w-full md:w-48">
+                              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
+                              <Input 
+                                placeholder={t.filterKeyword} 
+                                className="pl-7 h-8 text-xs" 
+                                value={directorSearchKeyword}
+                                onChange={(e) => setDirectorSearchKeyword(e.target.value)}
+                              />
+                            </div>
+                            <select 
+                               className="h-8 rounded-md border border-slate-200 bg-white px-2 py-0 text-xs focus:outline-none focus:ring-2 focus:ring-slate-950"
+                               value={directorSelectedPlatform}
+                               onChange={(e) => setDirectorSelectedPlatform(e.target.value)}
+                             >
+                               <option value="all">{t.all} {t.filterPlatform}</option>
+                               <option value="news">{t.news}</option>
+                               <option value="social">{t.socialMedia}</option>
+                             </select>
+                             <select 
+                               className="h-8 rounded-md border border-slate-200 bg-white px-2 py-0 text-xs focus:outline-none focus:ring-2 focus:ring-slate-950"
+                               value={directorSelectedSentiment}
+                               onChange={(e) => setDirectorSelectedSentiment(e.target.value)}
+                             >
+                               <option value="all">{t.allSentiments}</option>
+                               <option value="positive">{t.positive}</option>
+                               <option value="negative">{t.negative}</option>
+                               <option value="neutral">{t.neutral}</option>
+                             </select>
+                         </div>
+                       </div>
                      </CardHeader>
                      <CardContent>
                        <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
@@ -752,11 +904,11 @@ export default function Dashboard() {
                                </div>
                              </div>
                            ))
-                         ) : (
-                           <div className="text-center py-8 text-slate-500">
-                             Tidak ada data news feed untuk direktur ini.
-                           </div>
-                         )}
+                        ) : (
+                          <div className="text-center py-8 text-slate-500">
+                            {t.noData}
+                          </div>
+                        )}
                        </div>
                      </CardContent>
                    </Card>
