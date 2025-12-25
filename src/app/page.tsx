@@ -50,7 +50,11 @@ import {
   Download,
   AlertTriangle,
   Users,
-  Target
+  Target,
+  ExternalLink,
+  Calendar,
+  Tag,
+  Languages
 } from 'lucide-react';
 import { 
   directors, 
@@ -62,27 +66,64 @@ import {
   Director, 
   NewsItem 
 } from '@/data/dummyData';
+import { translations } from '@/data/translations';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
 export default function Dashboard() {
+  const [language, setLanguage] = useState<'id' | 'en'>('id');
+  const t = translations[language];
+
   const [selectedDirector, setSelectedDirector] = useState<Director>(directors[0]);
   
+  // Dashboard Configuration
+  const [datePeriod] = useState("1 Januari 2024 - 31 Januari 2024");
+  const [keywords] = useState(["ICONNET", "PLN Icon Plus", "Internet WiFi", "Gangguan Jaringan", "Layanan Pelanggan", "Pasang Baru"]);
+
   // Memoize data
   const trendData = useMemo(() => getTrendData(selectedDirector.id), [selectedDirector.id]);
   
-  const directorNewsList = useMemo(() => 
-    newsFeed.filter(news => news.directorId === selectedDirector.id),
-    [selectedDirector.id]
-  );
+  const corporateNewsList = useMemo(() => {
+    // Return all news for overview, but ensure we have enough diversity
+    // Sort by date (mock) or id descending to show "latest"
+    return newsFeed.sort((a, b) => b.id - a.id);
+  }, []);
 
-  const corporateNewsList = useMemo(() => newsFeed, []);
+  const sentimentCounts = useMemo(() => {
+    const counts = { positive: 0, neutral: 0, negative: 0 };
+    corporateNewsList.forEach(news => {
+      // @ts-ignore
+      if (counts[news.sentiment] !== undefined) {
+        // @ts-ignore
+        counts[news.sentiment]++;
+      }
+    });
+    return [
+      { name: t.positive, value: counts.positive, color: '#10B981' },
+      { name: t.neutral, value: counts.neutral, color: '#F59E0B' },
+      { name: t.negative, value: counts.negative, color: '#EF4444' },
+    ];
+  }, [corporateNewsList, t]);
+
+  const topPositiveNews = useMemo(() => {
+    return corporateNewsList.filter(n => n.sentiment === 'positive').slice(0, 10);
+  }, [corporateNewsList]);
+
+  const topNegativeNews = useMemo(() => {
+    return corporateNewsList.filter(n => n.sentiment === 'negative').slice(0, 10);
+  }, [corporateNewsList]);
+
+  const directorNewsList = useMemo(() => {
+    const directorNews = newsFeed.filter(news => news.directorId === selectedDirector.id);
+    // Sort by id descending
+    return directorNews.sort((a, b) => b.id - a.id);
+  }, [selectedDirector.id]);
 
   const directorSentimentData = useMemo(() => [
-    { name: 'Positif', value: selectedDirector.stats.positive, color: '#10B981' }, // Success Green
-    { name: 'Netral', value: selectedDirector.stats.neutral, color: '#F59E0B' },  // Warning Amber
-    { name: 'Negatif', value: selectedDirector.stats.negative, color: '#EF4444' }, // Danger Red
-  ], [selectedDirector]);
+    { name: t.positive, value: selectedDirector.stats.positive, color: '#10B981' }, // Success Green
+    { name: t.neutral, value: selectedDirector.stats.neutral, color: '#F59E0B' },  // Warning Amber
+    { name: t.negative, value: selectedDirector.stats.negative, color: '#EF4444' }, // Danger Red
+  ], [selectedDirector, t]);
 
   const getSentimentColor = (score: number) => {
     if (score >= 70) return 'text-emerald-600';
@@ -102,9 +143,9 @@ export default function Dashboard() {
 
   const getSentimentLabel = (sentiment: string) => {
     switch(sentiment) {
-      case 'positive': return 'Positif';
-      case 'negative': return 'Negatif';
-      case 'neutral': return 'Netral';
+      case 'positive': return t.positive;
+      case 'negative': return t.negative;
+      case 'neutral': return t.neutral;
       default: return sentiment;
     }
   };
@@ -125,19 +166,30 @@ export default function Dashboard() {
             <h1 className="font-bold text-xl text-[#005F99] tracking-tight leading-none">
               SENTINEL
             </h1>
-            <p className="text-[10px] text-slate-500 font-medium tracking-wider">PLN ICON PLUS REPUTATION MONITOR</p>
+            <p className="text-[10px] text-slate-500 font-medium tracking-wider">{t.subtitle}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
+           {/* Language Toggle */}
+           <Button 
+            variant="ghost" 
+            size="sm" 
+            className="hidden sm:flex gap-2 text-slate-600" 
+            onClick={() => setLanguage(prev => prev === 'id' ? 'en' : 'id')}
+           >
+            <Languages className="h-4 w-4" />
+            <span className="font-medium">{language === 'id' ? 'ID' : 'EN'}</span>
+           </Button>
+
            <Button variant="outline" size="sm" className="hidden sm:flex gap-2" onClick={handleExportPDF}>
             <Download className="h-4 w-4" />
-            Export PDF
+            {t.exportPdf}
           </Button>
           <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
             <div className="text-right hidden md:block">
-              <p className="text-sm font-semibold text-slate-700">Admin Sentinel</p>
-              <p className="text-xs text-slate-500">Super Administrator</p>
+              <p className="text-sm font-semibold text-slate-700">{t.adminName}</p>
+              <p className="text-xs text-slate-500">{t.adminRole}</p>
             </div>
             <Avatar className="h-9 w-9 border border-slate-200">
               <AvatarImage src="https://github.com/shadcn.png" />
@@ -155,19 +207,48 @@ export default function Dashboard() {
       <main className="flex-1 overflow-y-auto p-4 lg:p-8">
         <div className="max-w-7xl mx-auto space-y-8">
           
+          {/* Dashboard Context Info */}
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-50 p-2 rounded-lg">
+                <Calendar className="h-5 w-5 text-[#005F99]" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">{t.dataPeriod}</p>
+                <p className="font-bold text-slate-800">{datePeriod}</p>
+              </div>
+            </div>
+            <div className="h-8 w-px bg-slate-200 hidden md:block"></div>
+            <div className="flex items-center gap-3 flex-1">
+              <div className="bg-blue-50 p-2 rounded-lg">
+                <Tag className="h-5 w-5 text-[#005F99]" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">{t.monitoredKeywords}</p>
+                <div className="flex flex-wrap gap-2">
+                  {keywords.map((keyword, index) => (
+                    <Badge key={index} variant="secondary" className="bg-slate-100 text-slate-600 font-normal border-slate-200">
+                      {keyword}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm inline-flex h-auto">
               <TabsTrigger value="overview" className="px-6 py-2.5 rounded-lg data-[state=active]:bg-[#005F99] data-[state=active]:text-white">
                 <Activity className="w-4 h-4 mr-2" />
-                Executive Summary
+                {t.tabOverview}
               </TabsTrigger>
               <TabsTrigger value="competitors" className="px-6 py-2.5 rounded-lg data-[state=active]:bg-[#005F99] data-[state=active]:text-white">
                 <Target className="w-4 h-4 mr-2" />
-                Competitor Analysis
+                {t.tabCompetitors}
               </TabsTrigger>
               <TabsTrigger value="directors" className="px-6 py-2.5 rounded-lg data-[state=active]:bg-[#005F99] data-[state=active]:text-white">
                 <Users className="w-4 h-4 mr-2" />
-                Director Watch
+                {t.tabDirectors}
               </TabsTrigger>
             </TabsList>
 
@@ -177,9 +258,9 @@ export default function Dashboard() {
               {corporateStats.sentimentScore < 50 && (
                 <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800">
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Negative Sentiment Alert</AlertTitle>
+                  <AlertTitle>{t.negSentimentTitle}</AlertTitle>
                   <AlertDescription>
-                    Sentiment score has dropped below 50%. Immediate attention required on recent issues.
+                    {t.negSentimentDesc}
                   </AlertDescription>
                 </Alert>
               )}
@@ -188,34 +269,34 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Mentions</CardTitle>
+                    <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">{t.kpiTotalMentions}</CardTitle>
                     <MessageSquare className="h-4 w-4 text-[#00AEEF]" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold text-[#005F99]">{corporateStats.totalMentions.toLocaleString()}</div>
                     <p className="text-xs text-slate-500 mt-1">
-                      <span className="text-emerald-600 font-medium">+{corporateStats.mentionsChange}%</span> from last month
+                      <span className="text-emerald-600 font-medium">+{corporateStats.mentionsChange}%</span> {t.kpiMentionsDesc}
                     </p>
                   </CardContent>
                 </Card>
                 <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">Sentiment Score</CardTitle>
+                    <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">{t.kpiSentimentScore}</CardTitle>
                     <Activity className="h-4 w-4 text-[#00AEEF]" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold text-[#005F99]">{corporateStats.sentimentScore}%</div>
-                    <p className="text-xs text-slate-500 mt-1">Positive Sentiment Ratio</p>
+                    <p className="text-xs text-slate-500 mt-1">{t.kpiSentimentDesc}</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">Potential Reach</CardTitle>
+                    <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">{t.kpiPotentialReach}</CardTitle>
                     <Users className="h-4 w-4 text-[#00AEEF]" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold text-[#005F99]">{corporateStats.potentialReach}</div>
-                    <p className="text-xs text-slate-500 mt-1">Estimated Audience</p>
+                    <p className="text-xs text-slate-500 mt-1">{t.kpiReachDesc}</p>
                   </CardContent>
                 </Card>
               </div>
@@ -224,8 +305,8 @@ export default function Dashboard() {
                 {/* Trend Chart */}
                 <Card className="lg:col-span-2 border-slate-200 shadow-sm">
                   <CardHeader>
-                    <CardTitle className="text-lg font-bold text-slate-800">Daily Mention Trend</CardTitle>
-                    <CardDescription>Volume of mentions over the last 7 days</CardDescription>
+                    <CardTitle className="text-lg font-bold text-slate-800">{t.trendTitle}</CardTitle>
+                    <CardDescription>{t.trendDesc}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px] w-full">
@@ -238,24 +319,57 @@ export default function Dashboard() {
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                          <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                          <XAxis dataKey="day" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                           <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                           <Tooltip 
                             contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}
                             itemStyle={{ color: '#005F99', fontWeight: 'bold' }}
                           />
-                          <Area type="monotone" dataKey="value" stroke="#00AEEF" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+                          <Area type="monotone" dataKey="mentions" stroke="#00AEEF" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Top Issues */}
+                {/* Detailed Sentiment Analysis (New) */}
                 <Card className="border-slate-200 shadow-sm">
                   <CardHeader>
-                    <CardTitle className="text-lg font-bold text-slate-800">Top Issues</CardTitle>
-                    <CardDescription>Most discussed topics</CardDescription>
+                    <CardTitle className="text-lg font-bold text-slate-800">{t.sentimentDetailTitle}</CardTitle>
+                    <CardDescription>{t.sentimentDetailDesc}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                        <PieChart>
+                          <Pie
+                            data={sentimentCounts}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="value"
+                          >
+                            {sentimentCounts.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={{ borderRadius: '8px' }} />
+                          <Legend verticalAlign="bottom" height={36} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Top Issues (Moved) */}
+                <Card className="border-slate-200 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold text-slate-800">{t.topIssuesTitle}</CardTitle>
+                    <CardDescription>{t.topIssuesDesc}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px] w-full">
@@ -271,53 +385,129 @@ export default function Dashboard() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Verbatim Feed (Moved & Updated) */}
+                <Card className="lg:col-span-2 border-slate-200 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold text-slate-800">{t.verbatimTitle}</CardTitle>
+                    <CardDescription>{t.verbatimDesc}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                      {corporateNewsList.map((news) => (
+                        <div key={news.id} className="flex gap-4 p-4 rounded-lg bg-slate-50 border border-slate-100 hover:border-blue-200 transition-colors">
+                          <div className="flex-shrink-0 mt-1">
+                            {getPlatformIcon(news.platform)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-semibold text-[#005F99] bg-blue-50 px-2 py-0.5 rounded-full">{news.source}</span>
+                              <span className="text-xs text-slate-400">{news.date}</span>
+                            </div>
+                            <a href={news.url} target="_blank" rel="noopener noreferrer" className="group/link block">
+                                <p className="text-sm font-medium text-slate-800 leading-snug group-hover/link:text-[#005F99] transition-colors flex items-center gap-1">
+                                    {news.title}
+                                    <ExternalLink className="h-3 w-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                                </p>
+                            </a>
+                            <div className="flex items-center gap-2 mt-2">
+                               <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5 font-normal", 
+                                  news.sentiment === 'positive' ? "border-green-200 text-green-700 bg-green-50" :
+                                  news.sentiment === 'negative' ? "border-red-200 text-red-700 bg-red-50" :
+                                  "border-amber-200 text-amber-700 bg-amber-50"
+                               )}>
+                                 {getSentimentLabel(news.sentiment)}
+                               </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
-              {/* Verbatim Feed */}
-              <Card className="border-slate-200 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-lg font-bold text-slate-800">Verbatim News Feed</CardTitle>
-                  <CardDescription>Real-time mentions across platforms</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {corporateNewsList.slice(0, 5).map((news) => (
-                      <div key={news.id} className="flex gap-4 p-4 rounded-lg bg-slate-50 border border-slate-100 hover:border-blue-200 transition-colors">
-                        <div className="flex-shrink-0 mt-1">
-                          {getPlatformIcon(news.platform)}
+              {/* Top Positive & Negative News (New) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 {/* Top Positive */}
+                 <Card className="border-slate-200 shadow-sm border-t-4 border-t-green-500">
+                    <CardHeader>
+                        <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5 text-green-600" />
+                            {t.topPosNews}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-3">
+                            {topPositiveNews.map((news) => (
+                                <div key={news.id} className="p-3 rounded-lg bg-green-50/50 border border-green-100 hover:bg-green-50 transition-colors">
+                                    <div className="flex items-start gap-3">
+                                        <div className="mt-1">{getPlatformIcon(news.platform)}</div>
+                                        <div className="flex-1 min-w-0">
+                                            <a href={news.url} target="_blank" rel="noopener noreferrer" className="group/link">
+                                                <p className="text-sm font-medium text-slate-900 leading-snug hover:text-green-700 transition-colors line-clamp-2 mb-1">
+                                                    {news.title}
+                                                    <ExternalLink className="inline-block ml-1 h-3 w-3 opacity-0 group-hover/link:opacity-100" />
+                                                </p>
+                                            </a>
+                                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                                                <span>{news.source}</span>
+                                                <span>•</span>
+                                                <span>{news.date}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-semibold text-[#005F99] bg-blue-50 px-2 py-0.5 rounded-full">{news.source}</span>
-                            <span className="text-xs text-slate-400">{news.date}</span>
-                          </div>
-                          <p className="text-sm font-medium text-slate-800 leading-snug">{news.title}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                             <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5 font-normal", 
-                                news.sentiment === 'positive' ? "border-green-200 text-green-700 bg-green-50" :
-                                news.sentiment === 'negative' ? "border-red-200 text-red-700 bg-red-50" :
-                                "border-amber-200 text-amber-700 bg-amber-50"
-                             )}>
-                               {getSentimentLabel(news.sentiment)}
-                             </Badge>
-                          </div>
+                    </CardContent>
+                 </Card>
+
+                 {/* Top Negative */}
+                 <Card className="border-slate-200 shadow-sm border-t-4 border-t-red-500">
+                    <CardHeader>
+                        <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-red-600" />
+                            {t.topNegNews}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-3">
+                            {topNegativeNews.map((news) => (
+                                <div key={news.id} className="p-3 rounded-lg bg-red-50/50 border border-red-100 hover:bg-red-50 transition-colors">
+                                    <div className="flex items-start gap-3">
+                                        <div className="mt-1">{getPlatformIcon(news.platform)}</div>
+                                        <div className="flex-1 min-w-0">
+                                            <a href={news.url} target="_blank" rel="noopener noreferrer" className="group/link">
+                                                <p className="text-sm font-medium text-slate-900 leading-snug hover:text-red-700 transition-colors line-clamp-2 mb-1">
+                                                    {news.title}
+                                                    <ExternalLink className="inline-block ml-1 h-3 w-3 opacity-0 group-hover/link:opacity-100" />
+                                                </p>
+                                            </a>
+                                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                                                <span>{news.source}</span>
+                                                <span>•</span>
+                                                <span>{news.date}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                 </Card>
+              </div>
             </TabsContent>
 
             {/* COMPETITORS TAB */}
             <TabsContent value="competitors" className="space-y-6">
               <Card className="border-slate-200 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-lg font-bold text-slate-800">Competitor Sentiment Analysis</CardTitle>
-                  <CardDescription>Share of voice and sentiment comparison</CardDescription>
+                  <CardTitle className="text-lg font-bold text-slate-800">{t.compAnalysisTitle}</CardTitle>
+                  <CardDescription>{t.compAnalysisDesc}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[400px] w-full">
+                  <div className="h-[400px] w-full mb-8">
                     <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                       <BarChart data={competitorAnalysis} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -325,11 +515,56 @@ export default function Dashboard() {
                         <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
                         <Tooltip contentStyle={{ borderRadius: '8px' }} />
                         <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                        <Bar dataKey="positive" name="Positive" stackId="a" fill="#10B981" />
-                        <Bar dataKey="neutral" name="Neutral" stackId="a" fill="#F59E0B" />
-                        <Bar dataKey="negative" name="Negative" stackId="a" fill="#EF4444" />
+                        <Bar dataKey="positive" name={t.positive} stackId="a" fill="#10B981" />
+                        <Bar dataKey="neutral" name={t.neutral} stackId="a" fill="#F59E0B" />
+                        <Bar dataKey="negative" name={t.negative} stackId="a" fill="#EF4444" />
                       </BarChart>
                     </ResponsiveContainer>
+                  </div>
+
+                  {/* Detailed Competitor Table */}
+                  <div className="overflow-x-auto rounded-lg border border-slate-200">
+                    <table className="w-full text-sm text-left text-slate-600">
+                        <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th scope="col" className="px-6 py-3 font-semibold">{t.compTableCompetitor}</th>
+                                <th scope="col" className="px-6 py-3 font-semibold text-center">{t.compTableTotal}</th>
+                                <th scope="col" className="px-6 py-3 font-semibold text-center text-green-600">{t.compTablePositive}</th>
+                                <th scope="col" className="px-6 py-3 font-semibold text-center text-amber-600">{t.compTableNeutral}</th>
+                                <th scope="col" className="px-6 py-3 font-semibold text-center text-red-600">{t.compTableNegative}</th>
+                                <th scope="col" className="px-6 py-3 font-semibold text-center">{t.compTableScore}</th>
+                                <th scope="col" className="px-6 py-3 font-semibold text-center">{t.compTableShare}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {competitorAnalysis.map((comp, index) => {
+                                const total = comp.positive + comp.neutral + comp.negative;
+                                const grandTotal = competitorAnalysis.reduce((acc, curr) => acc + curr.positive + curr.neutral + curr.negative, 0);
+                                const sentimentScore = Math.round((comp.positive / total) * 100);
+                                const shareOfVoice = ((total / grandTotal) * 100).toFixed(1);
+
+                                return (
+                                    <tr key={index} className="bg-white border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                        <td className="px-6 py-4 font-medium text-slate-900">{comp.name}</td>
+                                        <td className="px-6 py-4 text-center font-semibold">{total.toLocaleString()}</td>
+                                        <td className="px-6 py-4 text-center text-green-600 font-medium">{comp.positive}</td>
+                                        <td className="px-6 py-4 text-center text-amber-600 font-medium">{comp.neutral}</td>
+                                        <td className="px-6 py-4 text-center text-red-600 font-medium">{comp.negative}</td>
+                                        <td className="px-6 py-4 text-center">
+                                            <Badge variant="outline" className={cn("font-semibold", 
+                                                sentimentScore >= 70 ? "text-green-700 border-green-200 bg-green-50" :
+                                                sentimentScore < 50 ? "text-red-700 border-red-200 bg-red-50" :
+                                                "text-amber-700 border-amber-200 bg-amber-50"
+                                            )}>
+                                                {sentimentScore}%
+                                            </Badge>
+                                        </td>
+                                        <td className="px-6 py-4 text-center text-slate-500">{shareOfVoice}%</td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                   </div>
                 </CardContent>
               </Card>
@@ -342,7 +577,7 @@ export default function Dashboard() {
                 <div className="w-full lg:w-80 space-y-4">
                   <Card className="border-slate-200 shadow-sm">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Board of Directors</CardTitle>
+                      <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">{t.directorsListTitle}</CardTitle>
                     </CardHeader>
                     <CardContent className="p-2 grid gap-1">
                       {directors.map((director) => (
@@ -389,12 +624,12 @@ export default function Dashboard() {
                              </Avatar>
                            </div>
                            <Badge className={cn("absolute -bottom-2 left-1/2 -translate-x-1/2 shadow-sm whitespace-nowrap", 
-                              selectedDirector.sentiment >= 70 ? "bg-[#10B981] hover:bg-[#059669]" : "bg-[#F59E0B] hover:bg-[#D97706]"
-                           )}>
-                              {selectedDirector.sentiment}% Positive
-                           </Badge>
-                         </div>
-                         <div className="text-center md:text-left flex-1">
+                             selectedDirector.sentiment >= 70 ? "bg-[#10B981] hover:bg-[#059669]" : "bg-[#F59E0B] hover:bg-[#D97706]"
+                          )}>
+                             {selectedDirector.sentiment}% {t.directorPosSentiment}
+                          </Badge>
+                        </div>
+                        <div className="text-center md:text-left flex-1">
                            <h2 className="text-2xl font-bold text-slate-900">{selectedDirector.name}</h2>
                            <p className="text-[#005F99] font-medium">{selectedDirector.title}</p>
                            <p className="text-slate-500 text-sm mt-1">{selectedDirector.product}</p>
@@ -460,6 +695,47 @@ export default function Dashboard() {
                         </CardContent>
                       </Card>
                    </div>
+
+                   {/* Verbatim News Feed for Director */}
+                   <Card className="lg:col-span-2 border-slate-200 shadow-sm">
+                     <CardHeader>
+                       <CardTitle className="text-lg font-bold text-slate-800">Verbatim News Feed</CardTitle>
+                       <CardDescription>Mentions terbaru tentang {selectedDirector.name}</CardDescription>
+                     </CardHeader>
+                     <CardContent>
+                       <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                         {directorNewsList.length > 0 ? (
+                           directorNewsList.map((news) => (
+                             <div key={news.id} className="flex gap-4 p-4 rounded-lg bg-slate-50 border border-slate-100 hover:border-blue-200 transition-colors">
+                               <div className="flex-shrink-0 mt-1">
+                                 {getPlatformIcon(news.platform)}
+                               </div>
+                               <div className="flex-1 min-w-0">
+                                 <div className="flex items-center justify-between mb-1">
+                                   <span className="text-xs font-semibold text-[#005F99] bg-blue-50 px-2 py-0.5 rounded-full">{news.source}</span>
+                                   <span className="text-xs text-slate-400">{news.date}</span>
+                                 </div>
+                                 <p className="text-sm font-medium text-slate-800 leading-snug">{news.title}</p>
+                                 <div className="flex items-center gap-2 mt-2">
+                                    <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5 font-normal", 
+                                       news.sentiment === 'positive' ? "border-green-200 text-green-700 bg-green-50" :
+                                       news.sentiment === 'negative' ? "border-red-200 text-red-700 bg-red-50" :
+                                       "border-amber-200 text-amber-700 bg-amber-50"
+                                    )}>
+                                      {getSentimentLabel(news.sentiment)}
+                                    </Badge>
+                                 </div>
+                               </div>
+                             </div>
+                           ))
+                         ) : (
+                           <div className="text-center py-8 text-slate-500">
+                             Tidak ada data news feed untuk direktur ini.
+                           </div>
+                         )}
+                       </div>
+                     </CardContent>
+                   </Card>
                 </div>
               </div>
             </TabsContent>
