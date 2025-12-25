@@ -230,15 +230,18 @@ export default function Dashboard() {
     }
   };
 
-  const waitForNextFrame = () =>
-    new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-
   const handleExportPDF = async () => {
     document.documentElement.setAttribute('data-exporting-pdf', 'true');
 
-    await waitForNextFrame();
+    // Give charts time to resize/re-render
+    // setTimeout is more reliable than requestAnimationFrame for print dialogs
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Force a resize event
     window.dispatchEvent(new Event('resize'));
-    await waitForNextFrame();
+    
+    // Wait a bit more
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     window.print();
   };
@@ -258,8 +261,9 @@ export default function Dashboard() {
           
           /* CRITICAL: Fix Recharts visibility in print */
           /* We must force a fixed size because responsive calculations fail in print */
+          /* Using fixed px width (approx A4 landscape content width) instead of 100% is more reliable */
           .recharts-responsive-container {
-            width: 1000px !important;
+            width: 900px !important; 
             height: 100% !important;
             display: block !important;
             overflow: visible !important;
@@ -267,14 +271,14 @@ export default function Dashboard() {
           
           /* Ensure the inner wrapper also has size */
           .recharts-wrapper {
-             width: 100% !important;
+             width: 900px !important;
              height: 100% !important;
              display: block !important;
           }
           
           /* Ensure SVG is visible */
           .recharts-surface {
-             width: 100% !important;
+             width: 900px !important;
              height: 100% !important;
              overflow: visible !important;
           }

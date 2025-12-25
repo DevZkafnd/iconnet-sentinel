@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,6 @@ import { Lock, User, ShieldCheck, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -37,7 +35,7 @@ export default function LoginPage() {
         const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl') || '/';
         window.location.href = callbackUrl;
       }
-    } catch (err) {
+    } catch {
       setError('Terjadi kesalahan saat login. Silakan coba lagi nanti.');
       setIsLoading(false);
     }
