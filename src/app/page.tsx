@@ -256,29 +256,35 @@ export default function Dashboard() {
           .print-break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
           
           /* Force block layout for grids to ensure width is calculated correctly */
-          .grid { display: block !important; }
-          .grid > * { width: 100% !important; margin-bottom: 1rem; }
+          /* REMOVED: .grid { display: block !important; } */
+          /* REMOVED: .grid > * { width: 100% !important; margin-bottom: 1rem; } */
           
           /* CRITICAL: Fix Recharts visibility in print */
-          /* We must force a fixed size because responsive calculations fail in print */
           /* Using fixed px width (approx A4 landscape content width) instead of 100% is more reliable */
+          html[data-exporting-pdf='true'] .recharts-responsive-container,
           .recharts-responsive-container {
-            width: 900px !important; 
+            /* width: 900px !important; REMOVED FIXED WIDTH */
+            width: 100% !important;
             height: 100% !important;
             display: block !important;
             overflow: visible !important;
           }
           
           /* Ensure the inner wrapper also has size */
+          html[data-exporting-pdf='true'] .recharts-wrapper,
           .recharts-wrapper {
-             width: 900px !important;
+             /* width: 900px !important; REMOVED FIXED WIDTH */
+             width: 100% !important;
              height: 100% !important;
              display: block !important;
+             min-width: 0;
           }
           
           /* Ensure SVG is visible */
+          html[data-exporting-pdf='true'] .recharts-surface,
           .recharts-surface {
-             width: 900px !important;
+             /* width: 900px !important; REMOVED FIXED WIDTH */
+             width: 100% !important;
              height: 100% !important;
              overflow: visible !important;
           }
@@ -503,7 +509,7 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <AreaChart data={trendData}>
                           <defs>
                             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
@@ -530,7 +536,7 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px] w-full flex items-center justify-center">
-                      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <PieChart>
                           <Pie
                             data={sentimentCounts}
@@ -564,7 +570,7 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <BarChart layout="vertical" data={isuUtama} margin={{ left: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
                           <XAxis type="number" hide />
@@ -845,7 +851,7 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="h-[250px] w-full flex items-center justify-center">
-                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                               <PieChart>
                                 <Pie
                                   data={directorSentimentData}
@@ -876,7 +882,7 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                            <div className="h-[250px] w-full">
-                              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                                  <AreaChart data={trendData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                     <XAxis dataKey="hari" hide />
