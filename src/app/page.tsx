@@ -229,7 +229,7 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                         <AreaChart data={trendData}>
                           <defs>
                             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
@@ -259,7 +259,7 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                         <BarChart layout="vertical" data={topIssues} margin={{ left: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
                           <XAxis type="number" hide />
@@ -318,7 +318,7 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="h-[400px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                       <BarChart data={competitorAnalysis} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                         <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
@@ -418,7 +418,7 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="h-[250px] w-full flex items-center justify-center">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                               <PieChart>
                                 <Pie
                                   data={directorSentimentData}
@@ -448,7 +448,7 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                            <div className="h-[250px] w-full">
-                              <ResponsiveContainer width="100%" height="100%">
+                              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                  <AreaChart data={trendData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                     <XAxis dataKey="date" hide />

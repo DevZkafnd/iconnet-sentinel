@@ -33,8 +33,8 @@ export default function LoginPage() {
         setError('Email atau password salah. Silakan coba lagi.');
         setIsLoading(false);
       } else {
-        router.push('/');
-        router.refresh();
+        // Force full reload to ensure session cookies are picked up
+        window.location.href = '/';
       }
     } catch (err) {
       setError('Terjadi kesalahan saat login. Silakan coba lagi nanti.');
