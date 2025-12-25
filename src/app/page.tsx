@@ -259,30 +259,6 @@ export default function Dashboard() {
           /* REMOVED: .grid { display: block !important; } */
           /* REMOVED: .grid > * { width: 100% !important; margin-bottom: 1rem; } */
           
-          /* CRITICAL: Fix Recharts visibility in print */
-          html[data-exporting-pdf='true'] .recharts-responsive-container {
-            width: 100% !important;
-            height: 100% !important;
-            min-width: 500px !important;
-            min-height: 300px !important;
-            overflow: visible !important;
-          }
-          
-          /* Ensure the inner wrapper also has size */
-          html[data-exporting-pdf='true'] .recharts-wrapper {
-             width: 100% !important;
-             height: 100% !important;
-             min-width: 500px !important;
-             min-height: 300px !important;
-          }
-          
-          /* Ensure SVG is visible */
-          html[data-exporting-pdf='true'] .recharts-surface {
-             width: 100% !important;
-             height: 100% !important;
-             overflow: visible !important;
-          }
-          
           .recharts-legend-wrapper { position: static !important; }
           .recharts-tooltip-wrapper { display: none !important; }
           
@@ -303,6 +279,30 @@ export default function Dashboard() {
           [role="tabpanel"][data-state="inactive"] {
             display: none !important;
           }
+        }
+        
+        /* CRITICAL: Fix Recharts visibility in print - MOVED OUTSIDE @media print to apply during preparation */
+        html[data-exporting-pdf='true'] .recharts-responsive-container {
+          width: 100% !important;
+          height: 100% !important;
+          min-width: 500px !important;
+          min-height: 300px !important;
+          overflow: visible !important;
+        }
+        
+        /* Ensure the inner wrapper also has size */
+        html[data-exporting-pdf='true'] .recharts-wrapper {
+           width: 100% !important;
+           height: 100% !important;
+           min-width: 500px !important;
+           min-height: 300px !important;
+        }
+        
+        /* Ensure SVG is visible */
+        html[data-exporting-pdf='true'] .recharts-surface {
+           width: 100% !important;
+           height: 100% !important;
+           overflow: visible !important;
         }
       `}} />
 
