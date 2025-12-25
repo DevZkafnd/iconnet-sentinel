@@ -296,9 +296,10 @@ export default function Dashboard() {
           .recharts-tooltip-wrapper { display: none !important; }
           
           /* Ensure explicit heights for chart containers are respected */
-          .h-\[300px\] { height: 300px !important; }
-          .h-\[400px\] { height: 400px !important; }
-          .h-\[250px\] { height: 250px !important; }
+          /* INCREASED FOR PRINT */
+          .h-\[300px\] { height: 400px !important; }
+          .h-\[400px\] { height: 500px !important; }
+          .h-\[250px\] { height: 350px !important; }
           
           /* Hide scrollbars in print */
           ::-webkit-scrollbar { display: none; }
@@ -503,7 +504,7 @@ export default function Dashboard() {
                 </Card>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:grid-cols-1">
                 {/* Trend Chart */}
                 <Card className="lg:col-span-2 border-slate-200 shadow-sm card-print">
                   <CardHeader>
@@ -512,7 +513,7 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%" minWidth={500} minHeight={300}>
+                      <ResponsiveContainer width="100%" height="100%" minWidth={500} minHeight={400}>
                         <AreaChart data={trendData}>
                           <defs>
                             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
@@ -539,14 +540,14 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={300}>
+                      <ResponsiveContainer width="100%" height="100%" minWidth={400} minHeight={400}>
                         <PieChart>
                           <Pie
                             data={sentimentCounts}
                             cx="50%"
                             cy="50%"
-                            innerRadius={60}
-                            outerRadius={80}
+                            innerRadius={90}
+                            outerRadius={120}
                             paddingAngle={5}
                             dataKey="value"
                             isAnimationActive={false}
@@ -564,7 +565,7 @@ export default function Dashboard() {
                 </Card>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:grid-cols-1">
                 {/* Top Issues (Moved) */}
                 <Card className="border-slate-200 shadow-sm card-print">
                   <CardHeader>
@@ -603,7 +604,7 @@ export default function Dashboard() {
                     <CardDescription>{t.verbatimDesc}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 print:max-h-none print:overflow-visible">
                       {corporateNewsList.map((news) => (
                         <div key={news.id} className="flex gap-4 p-4 rounded-lg bg-slate-50 border border-slate-100 hover:border-blue-200 transition-colors">
                           <div className="flex-shrink-0 mt-1">
@@ -718,7 +719,7 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="h-[400px] w-full mb-8">
-                    <ResponsiveContainer width="100%" height="100%" minWidth={500} minHeight={400}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={500} minHeight={500}>
                       <BarChart data={analisisKompetitor} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                         <XAxis dataKey="nama" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
@@ -784,7 +785,7 @@ export default function Dashboard() {
             <TabsContent value="directors" className="space-y-6">
               <div className="flex flex-col lg:flex-row gap-6">
                 {/* Director List Sidebar */}
-                <div className="w-full lg:w-80 space-y-4">
+                <div className="w-full lg:w-80 space-y-4 print:hidden">
                   <Card className="border-slate-200 shadow-sm">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">{t.directorsListTitle}</CardTitle>
@@ -856,7 +857,7 @@ export default function Dashboard() {
                       </div>
                    </Card>
 
-                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-1">
                       {/* Sentiment Chart */}
                       <Card className="border-slate-200 shadow-sm card-print">
                         <CardHeader>
@@ -864,14 +865,14 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="h-[250px] w-full">
-                            <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={250}>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={400} minHeight={350}>
                               <PieChart>
                                 <Pie
                                   data={directorSentimentData}
                                   cx="50%"
                                   cy="50%"
-                                  innerRadius={60}
-                                  outerRadius={80}
+                                  innerRadius={75}
+                                  outerRadius={100}
                                   paddingAngle={5}
                                   dataKey="value"
                                   isAnimationActive={false}
@@ -895,7 +896,7 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                            <div className="h-[250px] w-full">
-                              <ResponsiveContainer width="100%" height="100%" minWidth={500} minHeight={250}>
+                              <ResponsiveContainer width="100%" height="100%" minWidth={600} minHeight={350}>
                                  <AreaChart data={trendData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                     <XAxis dataKey="hari" hide />
@@ -949,7 +950,7 @@ export default function Dashboard() {
                        </div>
                      </CardHeader>
                      <CardContent>
-                       <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                       <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 print:max-h-none print:overflow-visible">
                          {directorNewsList.length > 0 ? (
                            directorNewsList.map((news) => (
                              <div key={news.id} className="flex gap-4 p-4 rounded-lg bg-slate-50 border border-slate-100 hover:border-blue-200 transition-colors">
