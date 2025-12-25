@@ -167,6 +167,7 @@ export default function Dashboard() {
           .recharts-responsive-container { width: 100% !important; }
           .recharts-wrapper { max-width: 100% !important; }
           .recharts-surface { max-width: 100% !important; overflow: visible; }
+          .recharts-tooltip-wrapper { display: none !important; }
           
           /* Hide scrollbars in print */
           ::-webkit-scrollbar { display: none; }
@@ -345,7 +346,7 @@ export default function Dashboard() {
                             contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}
                             itemStyle={{ color: '#005F99', fontWeight: 'bold' }}
                           />
-                          <Area type="monotone" dataKey="mentions" stroke="#00AEEF" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+                          <Area type="monotone" dataKey="mentions" stroke="#00AEEF" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" isAnimationActive={false} />
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
@@ -370,6 +371,7 @@ export default function Dashboard() {
                             outerRadius={80}
                             paddingAngle={5}
                             dataKey="value"
+                            isAnimationActive={false}
                           >
                             {sentimentCounts.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
@@ -399,7 +401,7 @@ export default function Dashboard() {
                           <XAxis type="number" hide />
                           <YAxis dataKey="topic" type="category" width={100} stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
                           <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{ borderRadius: '8px' }} />
-                          <Bar dataKey="count" fill="#005F99" radius={[0, 4, 4, 0]} barSize={20} />
+                          <Bar dataKey="count" fill="#005F99" radius={[0, 4, 4, 0]} barSize={20} isAnimationActive={false} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -535,9 +537,9 @@ export default function Dashboard() {
                         <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
                         <Tooltip contentStyle={{ borderRadius: '8px' }} />
                         <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                        <Bar dataKey="positive" name={t.positive} stackId="a" fill="#10B981" />
-                        <Bar dataKey="neutral" name={t.neutral} stackId="a" fill="#F59E0B" />
-                        <Bar dataKey="negative" name={t.negative} stackId="a" fill="#EF4444" />
+                        <Bar dataKey="positive" name={t.positive} stackId="a" fill="#10B981" isAnimationActive={false} />
+                        <Bar dataKey="neutral" name={t.neutral} stackId="a" fill="#F59E0B" isAnimationActive={false} />
+                        <Bar dataKey="negative" name={t.negative} stackId="a" fill="#EF4444" isAnimationActive={false} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -684,6 +686,7 @@ export default function Dashboard() {
                                   outerRadius={80}
                                   paddingAngle={5}
                                   dataKey="value"
+                                  isAnimationActive={false}
                                 >
                                   {directorSentimentData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} />
@@ -698,7 +701,7 @@ export default function Dashboard() {
                       </Card>
 
                       {/* Mentions Trend */}
-                      <Card className="border-slate-200 shadow-sm">
+                      <Card className="border-slate-200 shadow-sm card-print">
                         <CardHeader>
                            <CardTitle className="text-base font-bold text-slate-800">Mentions Trend</CardTitle>
                         </CardHeader>
@@ -707,10 +710,10 @@ export default function Dashboard() {
                               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                  <AreaChart data={trendData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="date" hide />
-                                    <Tooltip contentStyle={{ borderRadius: '8px' }} />
-                                    <Area type="monotone" dataKey="value" stroke="#00AEEF" fill="#00AEEF" fillOpacity={0.1} />
-                                 </AreaChart>
+                                    <XAxis dataKey="day" hide />
+                                   <Tooltip contentStyle={{ borderRadius: '8px' }} />
+                                   <Area type="monotone" dataKey="mentions" stroke="#00AEEF" fill="#00AEEF" fillOpacity={0.1} isAnimationActive={false} />
+                                </AreaChart>
                               </ResponsiveContainer>
                            </div>
                         </CardContent>
