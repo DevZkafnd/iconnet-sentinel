@@ -49,8 +49,7 @@ import {
   ExternalLink,
   Calendar,
   Tag,
-  Languages,
-  Loader2
+  Languages
 } from 'lucide-react';
 import { 
   daftarDirektur, 
@@ -87,8 +86,6 @@ export default function Dashboard() {
   const [directorSelectedPlatform, setDirectorSelectedPlatform] = useState("all");
   const [directorSelectedSentiment, setDirectorSelectedSentiment] = useState("all");
 
-  const [isExporting, setIsExporting] = useState(false);
-
   useEffect(() => {
     const startPrintMode = () => {
       document.documentElement.setAttribute('data-exporting-pdf', 'true');
@@ -98,7 +95,6 @@ export default function Dashboard() {
     const stopPrintMode = () => {
       document.documentElement.removeAttribute('data-exporting-pdf');
       window.dispatchEvent(new Event('resize'));
-      setIsExporting(false);
     };
 
     window.addEventListener('beforeprint', startPrintMode);
@@ -235,7 +231,6 @@ export default function Dashboard() {
   };
 
   const handleExportPDF = async () => {
-    setIsExporting(true);
     document.documentElement.setAttribute('data-exporting-pdf', 'true');
 
     // Give charts time to resize/re-render
@@ -561,9 +556,9 @@ export default function Dashboard() {
                           <Pie
                             data={sentimentCounts}
                             cx="50%"
-                            cy="40%"
-                            innerRadius={90}
-                            outerRadius={120}
+                            cy="45%"
+                            innerRadius={80}
+                            outerRadius={110}
                             paddingAngle={5}
                             dataKey="value"
                             isAnimationActive={false}
@@ -886,9 +881,9 @@ export default function Dashboard() {
                                 <Pie
                                   data={directorSentimentData}
                                   cx="50%"
-                                  cy="40%"
-                                  innerRadius={75}
-                                  outerRadius={100}
+                                  cy="45%"
+                                  innerRadius={65}
+                                  outerRadius={90}
                                   paddingAngle={5}
                                   dataKey="value"
                                   isAnimationActive={false}
@@ -1006,26 +1001,6 @@ export default function Dashboard() {
 
         </div>
       </main>
-
-      {/* Export Overlay */}
-      {isExporting && (
-        <div className="fixed inset-0 z-[9999] bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center print:hidden">
-          <div className="bg-white p-8 rounded-2xl shadow-xl border border-slate-100 flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
-            <div className="relative">
-              <div className="h-16 w-16 rounded-full border-4 border-slate-100 border-t-[#005F99] animate-spin"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Loader2 className="h-6 w-6 text-[#005F99] animate-pulse" />
-              </div>
-            </div>
-            <div className="text-center space-y-2">
-              <h3 className="text-lg font-bold text-slate-800">Menyiapkan PDF...</h3>
-              <p className="text-sm text-slate-500 max-w-xs">
-                Sedang mengoptimalkan resolusi grafik untuk hasil cetak terbaik. Mohon tunggu sebentar.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
