@@ -71,6 +71,8 @@ export default function LoginPage() {
                 <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input 
                   id="email" 
+                  name="email"
+                  autoComplete="email"
                   type="email" 
                   placeholder="admin@iconpln.co.id" 
                   className="pl-10"
@@ -86,6 +88,8 @@ export default function LoginPage() {
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input 
                   id="password" 
+                  name="password"
+                  autoComplete="current-password"
                   type="password" 
                   placeholder="••••••••" 
                   className="pl-10"

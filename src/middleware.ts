@@ -3,11 +3,22 @@ import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
 export async function middleware(req: NextRequest) {
+  const secret = process.env.NEXTAUTH_SECRET;
+  
+  if (!secret) {
+    console.error("MIDDLEWARE ERROR: NEXTAUTH_SECRET is missing in environment variables!");
+  }
+
   // Check for session token
   const token = await getToken({ 
     req, 
-    secret: process.env.NEXTAUTH_SECRET 
+    secret: secret 
   });
+
+  console.log(`Middleware: Path=${req.nextUrl.pathname}, Token=${!!token ? 'Found' : 'Missing'}`);
+  if (token) {
+    console.log("Middleware: User Role:", token.role);
+  }
 
   const isLoginPage = req.nextUrl.pathname.startsWith('/login');
 
