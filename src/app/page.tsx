@@ -241,7 +241,7 @@ export default function Dashboard() {
     window.dispatchEvent(new Event('resize'));
     
     // Wait a bit more
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     window.print();
   };
@@ -266,7 +266,7 @@ export default function Dashboard() {
             /* width: 900px !important; REMOVED FIXED WIDTH */
             width: 100% !important;
             height: 100% !important;
-            display: block !important;
+            /* display: block !important; REMOVED FORCE BLOCK */
             overflow: visible !important;
           }
           
@@ -276,7 +276,7 @@ export default function Dashboard() {
              /* width: 900px !important; REMOVED FIXED WIDTH */
              width: 100% !important;
              height: 100% !important;
-             display: block !important;
+             /* display: block !important; REMOVED FORCE BLOCK */
              min-width: 0;
           }
           
@@ -705,7 +705,7 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="h-[400px] w-full mb-8">
-                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                       <BarChart data={analisisKompetitor} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                         <XAxis dataKey="nama" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
