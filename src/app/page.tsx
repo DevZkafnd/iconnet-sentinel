@@ -12,11 +12,15 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   LineChart,
   Line,
   AreaChart,
   Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -42,40 +46,48 @@ import {
   Facebook,
   Linkedin,
   Twitter,
-  Newspaper
+  Newspaper,
+  Download,
+  AlertTriangle,
+  Users,
+  Target
 } from 'lucide-react';
-import { directors, getTrendData, allNewsFeed, Director, NewsItem } from '@/data/dummyData';
+import { 
+  directors, 
+  getTrendData, 
+  newsFeed, 
+  corporateStats, 
+  competitorAnalysis, 
+  topIssues,
+  Director, 
+  NewsItem 
+} from '@/data/dummyData';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
 export default function Dashboard() {
   const [selectedDirector, setSelectedDirector] = useState<Director>(directors[0]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  // Memoize data to prevent unnecessary recalculations
+  
+  // Memoize data
   const trendData = useMemo(() => getTrendData(selectedDirector.id), [selectedDirector.id]);
   
-  const newsList = useMemo(() => 
-    allNewsFeed.filter(news => news.directorId === selectedDirector.id),
+  const directorNewsList = useMemo(() => 
+    newsFeed.filter(news => news.directorId === selectedDirector.id),
     [selectedDirector.id]
   );
 
-  const sentimentData = useMemo(() => [
-    { name: 'Positif', value: selectedDirector.stats.positive, color: '#22c55e' }, // Green-500
-    { name: 'Netral', value: selectedDirector.stats.neutral, color: '#94a3b8' },  // Slate-400
-    { name: 'Negatif', value: selectedDirector.stats.negative, color: '#ef4444' }, // Red-500
+  const corporateNewsList = useMemo(() => newsFeed, []);
+
+  const directorSentimentData = useMemo(() => [
+    { name: 'Positif', value: selectedDirector.stats.positive, color: '#10B981' }, // Success Green
+    { name: 'Netral', value: selectedDirector.stats.neutral, color: '#F59E0B' },  // Warning Amber
+    { name: 'Negatif', value: selectedDirector.stats.negative, color: '#EF4444' }, // Danger Red
   ], [selectedDirector]);
 
   const getSentimentColor = (score: number) => {
-    if (score >= 70) return 'text-green-600';
+    if (score >= 70) return 'text-emerald-600';
     if (score < 50) return 'text-red-600';
-    return 'text-yellow-600';
-  };
-
-  const getSentimentBg = (score: number) => {
-    if (score >= 70) return 'bg-green-100 text-green-700';
-    if (score < 50) return 'bg-red-100 text-red-700';
-    return 'bg-yellow-100 text-yellow-700';
+    return 'text-amber-600';
   };
 
   const getPlatformIcon = (platform: NewsItem['platform']) => {
@@ -88,30 +100,40 @@ export default function Dashboard() {
     }
   };
 
+  const getSentimentLabel = (sentiment: string) => {
+    switch(sentiment) {
+      case 'positive': return 'Positif';
+      case 'negative': return 'Negatif';
+      case 'neutral': return 'Netral';
+      default: return sentiment;
+    }
+  };
+
+  const handleExportPDF = () => {
+    window.print();
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans text-slate-900">
       {/* Topbar */}
-      <header className="bg-white border-b border-slate-200 h-16 flex items-center px-4 lg:px-6 justify-between sticky top-0 z-20 shadow-sm">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="lg:hidden"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          >
-            <Menu className="h-6 w-6 text-slate-600" />
-          </Button>
-          <div className="flex items-center gap-2">
-            <div className="bg-blue-600 p-1.5 rounded-lg">
-              <ShieldCheck className="h-5 w-5 text-white" />
-            </div>
-            <h1 className="font-bold text-lg lg:text-xl text-slate-800 tracking-tight hidden md:block">
-              Executive Reputation Monitor
+      <header className="bg-white border-b border-slate-200 h-16 flex items-center px-4 lg:px-8 justify-between sticky top-0 z-50 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="bg-[#005F99] p-2 rounded-lg">
+            <ShieldCheck className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h1 className="font-bold text-xl text-[#005F99] tracking-tight leading-none">
+              SENTINEL
             </h1>
+            <p className="text-[10px] text-slate-500 font-medium tracking-wider">PLN ICON PLUS REPUTATION MONITOR</p>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
+           <Button variant="outline" size="sm" className="hidden sm:flex gap-2" onClick={handleExportPDF}>
+            <Download className="h-4 w-4" />
+            Export PDF
+          </Button>
           <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
             <div className="text-right hidden md:block">
               <p className="text-sm font-semibold text-slate-700">Admin Sentinel</p>
@@ -130,278 +152,321 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Sidebar */}
-        <aside 
-          className={cn(
-            "fixed inset-y-0 left-0 z-10 w-72 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-auto flex flex-col",
-            isSidebarOpen ? "translate-x-0 pt-16 lg:pt-0" : "-translate-x-full pt-16 lg:pt-0"
-          )}
-        >
-          <div className="p-4 flex-1 overflow-y-auto">
-            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-2">
-              Daftar Direksi
-            </h2>
-            <div className="space-y-1">
-              {directors.map((director) => (
-                <button
-                  key={director.id}
-                  onClick={() => {
-                    setSelectedDirector(director);
-                    if (window.innerWidth < 1024) setIsSidebarOpen(false);
-                  }}
-                  className={cn(
-                    'w-full text-left px-3 py-3 rounded-lg text-sm font-medium transition-all flex items-center gap-3 group relative overflow-hidden',
-                    selectedDirector.id === director.id
-                      ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200 shadow-sm'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  )}
-                >
-                  <div className="relative">
-                    <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
-                      <AvatarImage src={director.image} />
-                      <AvatarFallback>{director.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span 
-                      className={cn(
-                        "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white",
-                        director.sentiment >= 70 ? "bg-green-500" : 
-                        director.sentiment < 50 ? "bg-red-500" : "bg-yellow-500"
-                      )}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate font-semibold">{director.name}</p>
-                    <p className="truncate text-xs text-slate-400 font-normal">{director.title}</p>
-                  </div>
-                  {selectedDirector.id === director.id && (
-                    <ChevronRight className="h-4 w-4 text-blue-400" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </aside>
+      <main className="flex-1 overflow-y-auto p-4 lg:p-8">
+        <div className="max-w-7xl mx-auto space-y-8">
+          
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm inline-flex h-auto">
+              <TabsTrigger value="overview" className="px-6 py-2.5 rounded-lg data-[state=active]:bg-[#005F99] data-[state=active]:text-white">
+                <Activity className="w-4 h-4 mr-2" />
+                Executive Summary
+              </TabsTrigger>
+              <TabsTrigger value="competitors" className="px-6 py-2.5 rounded-lg data-[state=active]:bg-[#005F99] data-[state=active]:text-white">
+                <Target className="w-4 h-4 mr-2" />
+                Competitor Analysis
+              </TabsTrigger>
+              <TabsTrigger value="directors" className="px-6 py-2.5 rounded-lg data-[state=active]:bg-[#005F99] data-[state=active]:text-white">
+                <Users className="w-4 h-4 mr-2" />
+                Director Watch
+              </TabsTrigger>
+            </TabsList>
 
-        {/* Overlay for mobile sidebar */}
-        {isSidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black/20 z-0 lg:hidden"
-            onClick={() => setIsSidebarOpen(false)}
-          />
-        )}
+            {/* OVERVIEW TAB */}
+            <TabsContent value="overview" className="space-y-6">
+              {/* Alert System */}
+              {corporateStats.sentimentScore < 50 && (
+                <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Negative Sentiment Alert</AlertTitle>
+                  <AlertDescription>
+                    Sentiment score has dropped below 50%. Immediate attention required on recent issues.
+                  </AlertDescription>
+                </Alert>
+              )}
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50/50">
-          <div className="max-w-7xl mx-auto space-y-8">
-            
-            {/* ROW A: Profile Executive */}
-            <Card className="border-none shadow-md bg-white overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <Activity className="h-32 w-32" />
+              {/* KPI Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Mentions</CardTitle>
+                    <MessageSquare className="h-4 w-4 text-[#00AEEF]" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-[#005F99]">{corporateStats.totalMentions.toLocaleString()}</div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      <span className="text-emerald-600 font-medium">+{corporateStats.mentionsChange}%</span> from last month
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">Sentiment Score</CardTitle>
+                    <Activity className="h-4 w-4 text-[#00AEEF]" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-[#005F99]">{corporateStats.sentimentScore}%</div>
+                    <p className="text-xs text-slate-500 mt-1">Positive Sentiment Ratio</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">Potential Reach</CardTitle>
+                    <Users className="h-4 w-4 text-[#00AEEF]" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-[#005F99]">{corporateStats.potentialReach}</div>
+                    <p className="text-xs text-slate-500 mt-1">Estimated Audience</p>
+                  </CardContent>
+                </Card>
               </div>
-              <CardContent className="p-6 lg:p-8">
-                <div className="flex flex-col md:flex-row items-start md:items-center gap-6 relative z-10">
-                  <Avatar className="h-24 w-24 lg:h-32 lg:w-32 border-4 border-slate-50 shadow-lg">
-                    <AvatarImage src={selectedDirector.image} className="object-cover" />
-                    <AvatarFallback className="text-2xl">{selectedDirector.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  
-                  <div className="flex-1 space-y-2">
-                    <div>
-                      <h2 className="text-2xl lg:text-3xl font-bold text-slate-900">
-                        {selectedDirector.name}
-                      </h2>
-                      <p className="text-lg text-slate-500 font-medium">
-                        {selectedDirector.title}
-                      </p>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <Badge variant="secondary" className="bg-slate-100 text-slate-700 hover:bg-slate-200 px-3 py-1 text-sm border-slate-200">
-                        Fokus: <span className="font-bold ml-1 text-blue-600">{selectedDirector.product}</span>
-                      </Badge>
-                    </div>
-                  </div>
 
-                  <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-xl border border-slate-100 min-w-[140px]">
-                    <span className="text-sm font-semibold text-slate-500 uppercase tracking-wide">Reputasi</span>
-                    <div className={cn("text-4xl lg:text-5xl font-black my-1", getSentimentColor(selectedDirector.sentiment))}>
-                      {selectedDirector.sentiment}%
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Trend Chart */}
+                <Card className="lg:col-span-2 border-slate-200 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold text-slate-800">Daily Mention Trend</CardTitle>
+                    <CardDescription>Volume of mentions over the last 7 days</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={trendData}>
+                          <defs>
+                            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#00AEEF" stopOpacity={0.1}/>
+                              <stop offset="95%" stopColor="#00AEEF" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                          <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                          <Tooltip 
+                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                            itemStyle={{ color: '#005F99', fontWeight: 'bold' }}
+                          />
+                          <Area type="monotone" dataKey="value" stroke="#00AEEF" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
                     </div>
-                    <Badge className={cn("mt-1", getSentimentBg(selectedDirector.sentiment))}>
-                      {selectedDirector.sentiment >= 70 ? 'Excellent' : selectedDirector.sentiment < 50 ? 'Critical' : 'Moderate'}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
 
-            {/* ROW B: Visualizations */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
-              {/* Left: Trend Chart */}
-              <Card className="shadow-sm border-slate-200">
+                {/* Top Issues */}
+                <Card className="border-slate-200 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold text-slate-800">Top Issues</CardTitle>
+                    <CardDescription>Most discussed topics</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart layout="vertical" data={topIssues} margin={{ left: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
+                          <XAxis type="number" hide />
+                          <YAxis dataKey="topic" type="category" width={100} stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
+                          <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{ borderRadius: '8px' }} />
+                          <Bar dataKey="count" fill="#005F99" radius={[0, 4, 4, 0]} barSize={20} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Verbatim Feed */}
+              <Card className="border-slate-200 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <TrendingUp className="h-5 w-5 text-blue-600" />
-                    Tren Pembicaraan (7 Hari)
-                  </CardTitle>
-                  <CardDescription>
-                    Volume mention terkait {selectedDirector.name} di media sosial & berita.
-                  </CardDescription>
+                  <CardTitle className="text-lg font-bold text-slate-800">Verbatim News Feed</CardTitle>
+                  <CardDescription>Real-time mentions across platforms</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={trendData}>
-                        <defs>
-                          <linearGradient id="colorMentions" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis 
-                          dataKey="day" 
-                          stroke="#94a3b8" 
-                          fontSize={12} 
-                          tickLine={false} 
-                          axisLine={false}
-                          dy={10}
-                        />
-                        <YAxis 
-                          stroke="#94a3b8" 
-                          fontSize={12} 
-                          tickLine={false} 
-                          axisLine={false}
-                          tickFormatter={(value) => `${value}`}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: '#fff', 
-                            borderRadius: '8px', 
-                            border: '1px solid #e2e8f0',
-                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                          }}
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="mentions" 
-                          stroke="#2563eb" 
-                          strokeWidth={3}
-                          fillOpacity={1} 
-                          fill="url(#colorMentions)" 
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Right: Sentiment Analysis */}
-              <Card className="shadow-sm border-slate-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Activity className="h-5 w-5 text-green-600" />
-                    Analisis Sentimen
-                  </CardTitle>
-                  <CardDescription>
-                    Proporsi sentimen publik terhadap topik terkait.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[300px] w-full relative">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={sentimentData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={80}
-                          outerRadius={110}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {sentimentData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    {/* Center Text */}
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -mt-4 text-center pointer-events-none">
-                      <p className="text-3xl font-bold text-slate-800">
-                        {Math.round((selectedDirector.stats.positive / selectedDirector.stats.totalMentions) * 100)}%
-                      </p>
-                      <p className="text-xs text-slate-500 font-medium uppercase">Positif</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-            </div>
-
-            {/* ROW C: News Feed */}
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Newspaper className="h-5 w-5 text-slate-600" />
-                  Bukti Bicara (Feed)
-                </CardTitle>
-                <CardDescription>
-                  Daftar berita dan postingan media sosial terbaru.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {newsList.length > 0 ? (
-                    newsList.map((news) => (
-                      <div 
-                        key={news.id} 
-                        className="flex flex-col sm:flex-row gap-4 p-4 rounded-xl border border-slate-100 bg-white hover:bg-slate-50 hover:border-blue-100 transition-colors"
-                      >
-                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 flex-shrink-0">
+                  <div className="space-y-4">
+                    {corporateNewsList.slice(0, 5).map((news) => (
+                      <div key={news.id} className="flex gap-4 p-4 rounded-lg bg-slate-50 border border-slate-100 hover:border-blue-200 transition-colors">
+                        <div className="flex-shrink-0 mt-1">
                           {getPlatformIcon(news.platform)}
                         </div>
-                        <div className="flex-1 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-slate-700">{news.source}</span>
-                              <span className="text-xs text-slate-400">• {news.date}</span>
-                            </div>
-                            <Badge 
-                              variant="outline" 
-                              className={cn(
-                                "text-[10px] px-2 py-0.5 h-6 capitalize border-0",
-                                news.sentiment === 'positive' && "bg-green-100 text-green-700",
-                                news.sentiment === 'negative' && "bg-red-100 text-red-700",
-                                news.sentiment === 'neutral' && "bg-slate-100 text-slate-700"
-                              )}
-                            >
-                              {news.sentiment}
-                            </Badge>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-semibold text-[#005F99] bg-blue-50 px-2 py-0.5 rounded-full">{news.source}</span>
+                            <span className="text-xs text-slate-400">{news.date}</span>
                           </div>
-                          <p className="text-sm font-medium text-slate-800 leading-relaxed">
-                            "{news.title}"
-                          </p>
+                          <p className="text-sm font-medium text-slate-800 leading-snug">{news.title}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                             <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5 font-normal", 
+                                news.sentiment === 'positive' ? "border-green-200 text-green-700 bg-green-50" :
+                                news.sentiment === 'negative' ? "border-red-200 text-red-700 bg-red-50" :
+                                "border-amber-200 text-amber-700 bg-amber-50"
+                             )}>
+                               {getSentimentLabel(news.sentiment)}
+                             </Badge>
+                          </div>
                         </div>
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-slate-500">
-                      Belum ada data berita terbaru untuk saat ini.
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          </div>
-        </main>
-      </div>
+            {/* COMPETITORS TAB */}
+            <TabsContent value="competitors" className="space-y-6">
+              <Card className="border-slate-200 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold text-slate-800">Competitor Sentiment Analysis</CardTitle>
+                  <CardDescription>Share of voice and sentiment comparison</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[400px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={competitorAnalysis} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                        <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                        <Tooltip contentStyle={{ borderRadius: '8px' }} />
+                        <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                        <Bar dataKey="positive" name="Positive" stackId="a" fill="#10B981" />
+                        <Bar dataKey="neutral" name="Neutral" stackId="a" fill="#F59E0B" />
+                        <Bar dataKey="negative" name="Negative" stackId="a" fill="#EF4444" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* DIRECTORS TAB */}
+            <TabsContent value="directors" className="space-y-6">
+              <div className="flex flex-col lg:flex-row gap-6">
+                {/* Director List Sidebar */}
+                <div className="w-full lg:w-80 space-y-4">
+                  <Card className="border-slate-200 shadow-sm">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Board of Directors</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-2 grid gap-1">
+                      {directors.map((director) => (
+                        <button
+                          key={director.id}
+                          onClick={() => setSelectedDirector(director)}
+                          className={cn(
+                            'w-full text-left px-3 py-3 rounded-lg text-sm font-medium transition-all flex items-center gap-3 group relative overflow-hidden',
+                            selectedDirector.id === director.id
+                              ? 'bg-[#005F99]/10 text-[#005F99] ring-1 ring-[#005F99]/20 shadow-sm'
+                              : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                          )}
+                        >
+                          <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                            <AvatarImage src={director.image} />
+                            <AvatarFallback>{director.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="truncate font-semibold">{director.name}</p>
+                            <p className="truncate text-xs text-slate-500 font-normal">{director.title}</p>
+                          </div>
+                          {selectedDirector.id === director.id && (
+                            <ChevronRight className="h-4 w-4 text-[#00AEEF]" />
+                          )}
+                        </button>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Director Detail View */}
+                <div className="flex-1 space-y-6">
+                   {/* Profile Header */}
+                   <Card className="border-none shadow-md bg-white overflow-hidden relative">
+                      <div className="absolute top-0 right-0 p-4 opacity-5">
+                         <ShieldCheck className="h-64 w-64 text-[#005F99]" />
+                      </div>
+                      <div className="relative z-10 p-6 flex flex-col md:flex-row items-center md:items-start gap-6">
+                         <div className="relative">
+                           <div className="h-24 w-24 rounded-full p-1 bg-white shadow-lg ring-4 ring-slate-50">
+                             <Avatar className="h-full w-full">
+                               <AvatarImage src={selectedDirector.image} />
+                               <AvatarFallback className="text-2xl">{selectedDirector.name.charAt(0)}</AvatarFallback>
+                             </Avatar>
+                           </div>
+                           <Badge className={cn("absolute -bottom-2 left-1/2 -translate-x-1/2 shadow-sm whitespace-nowrap", 
+                              selectedDirector.sentiment >= 70 ? "bg-[#10B981] hover:bg-[#059669]" : "bg-[#F59E0B] hover:bg-[#D97706]"
+                           )}>
+                              {selectedDirector.sentiment}% Positive
+                           </Badge>
+                         </div>
+                         <div className="text-center md:text-left flex-1">
+                           <h2 className="text-2xl font-bold text-slate-900">{selectedDirector.name}</h2>
+                           <p className="text-[#005F99] font-medium">{selectedDirector.title}</p>
+                           <p className="text-slate-500 text-sm mt-1">{selectedDirector.product}</p>
+                           
+                           <div className="flex flex-wrap gap-2 mt-4 justify-center md:justify-start">
+                              {selectedDirector.topKeywords?.map((keyword, i) => (
+                                <Badge key={i} variant="secondary" className="bg-slate-100 text-slate-600 hover:bg-slate-200">
+                                  #{keyword}
+                                </Badge>
+                              ))}
+                           </div>
+                         </div>
+                      </div>
+                   </Card>
+
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Sentiment Chart */}
+                      <Card className="border-slate-200 shadow-sm">
+                        <CardHeader>
+                          <CardTitle className="text-base font-bold text-slate-800">Sentiment Distribution</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="h-[250px] w-full flex items-center justify-center">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={directorSentimentData}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={60}
+                                  outerRadius={80}
+                                  paddingAngle={5}
+                                  dataKey="value"
+                                >
+                                  {directorSentimentData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                  ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend verticalAlign="bottom" height={36}/>
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Mentions Trend */}
+                      <Card className="border-slate-200 shadow-sm">
+                        <CardHeader>
+                           <CardTitle className="text-base font-bold text-slate-800">Mentions Trend</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                           <div className="h-[250px] w-full">
+                              <ResponsiveContainer width="100%" height="100%">
+                                 <AreaChart data={trendData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                    <XAxis dataKey="date" hide />
+                                    <Tooltip contentStyle={{ borderRadius: '8px' }} />
+                                    <Area type="monotone" dataKey="value" stroke="#00AEEF" fill="#00AEEF" fillOpacity={0.1} />
+                                 </AreaChart>
+                              </ResponsiveContainer>
+                           </div>
+                        </CardContent>
+                      </Card>
+                   </div>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+        </div>
+      </main>
     </div>
   );
 }
