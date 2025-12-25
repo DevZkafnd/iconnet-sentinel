@@ -49,7 +49,8 @@ import {
   ExternalLink,
   Calendar,
   Tag,
-  Languages
+  Languages,
+  Loader2
 } from 'lucide-react';
 import { 
   daftarDirektur, 
@@ -86,6 +87,8 @@ export default function Dashboard() {
   const [directorSelectedPlatform, setDirectorSelectedPlatform] = useState("all");
   const [directorSelectedSentiment, setDirectorSelectedSentiment] = useState("all");
 
+  const [isExporting, setIsExporting] = useState(false);
+
   useEffect(() => {
     const startPrintMode = () => {
       document.documentElement.setAttribute('data-exporting-pdf', 'true');
@@ -95,6 +98,7 @@ export default function Dashboard() {
     const stopPrintMode = () => {
       document.documentElement.removeAttribute('data-exporting-pdf');
       window.dispatchEvent(new Event('resize'));
+      setIsExporting(false);
     };
 
     window.addEventListener('beforeprint', startPrintMode);
@@ -231,6 +235,7 @@ export default function Dashboard() {
   };
 
   const handleExportPDF = async () => {
+    setIsExporting(true);
     document.documentElement.setAttribute('data-exporting-pdf', 'true');
 
     // Give charts time to resize/re-render
@@ -281,28 +286,42 @@ export default function Dashboard() {
           }
         }
         
-        /* CRITICAL: Fix Recharts visibility in print - MOVED OUTSIDE @media print to apply during preparation */
+        /* 
+         * EXPORT STYLES - APPLIED GLOBALLY WHEN ATTRIBUTE IS PRESENT 
+         * This ensures elements are resized BEFORE the print dialog opens
+         */
+         
+        /* 1. Force chart wrappers to fixed large size */
+        html[data-exporting-pdf='true'] .chart-wrapper {
+          width: 1000px !important; /* Fixed large width for high res */
+          height: 500px !important; /* Fixed large height */
+          max-width: 100% !important;
+        }
+
+        /* 2. Force ResponsiveContainer to fill the wrapper */
         html[data-exporting-pdf='true'] .recharts-responsive-container {
           width: 100% !important;
           height: 100% !important;
-          min-width: 500px !important;
-          min-height: 300px !important;
+          min-width: 0 !important; /* Reset any min-width to avoid conflicts */
+          min-height: 0 !important;
           overflow: visible !important;
         }
         
-        /* Ensure the inner wrapper also has size */
-        html[data-exporting-pdf='true'] .recharts-wrapper {
-           width: 100% !important;
-           height: 100% !important;
-           min-width: 500px !important;
-           min-height: 300px !important;
-        }
-        
-        /* Ensure SVG is visible */
+        /* 3. Ensure inner Recharts elements fill the space */
+        html[data-exporting-pdf='true'] .recharts-wrapper,
         html[data-exporting-pdf='true'] .recharts-surface {
            width: 100% !important;
            height: 100% !important;
-           overflow: visible !important;
+        }
+
+        /* 4. Hide inactive tabs aggressively to prevent "duplicate charts" or "width(-1)" errors on hidden charts */
+        html[data-exporting-pdf='true'] [role="tabpanel"][data-state="inactive"] {
+          display: none !important;
+          visibility: hidden !important;
+          height: 0 !important;
+          width: 0 !important;
+          position: absolute !important;
+          pointer-events: none !important;
         }
       `}} />
 
@@ -509,7 +528,7 @@ export default function Dashboard() {
                     <CardDescription>{t.trendDesc}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-[300px] w-full">
+                    <div className="chart-wrapper h-[300px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={trendData}>
                           <defs>
@@ -536,13 +555,13 @@ export default function Dashboard() {
                     <CardDescription>{t.sentimentDetailDesc}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-[300px] w-full">
+                    <div className="chart-wrapper h-[300px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={sentimentCounts}
                             cx="50%"
-                            cy="50%"
+                            cy="40%"
                             innerRadius={90}
                             outerRadius={120}
                             paddingAngle={5}
@@ -554,7 +573,7 @@ export default function Dashboard() {
                             ))}
                           </Pie>
                           <Tooltip />
-                          <Legend verticalAlign="bottom" height={36}/>
+                          <Legend verticalAlign="bottom" height={48} wrapperStyle={{ paddingTop: '20px' }} />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
@@ -715,7 +734,7 @@ export default function Dashboard() {
                   <CardDescription>{t.compAnalysisDesc}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[400px] w-full mb-8">
+                  <div className="chart-wrapper h-[400px] w-full mb-8">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={analisisKompetitor} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -861,13 +880,13 @@ export default function Dashboard() {
                           <CardTitle className="text-base font-bold text-slate-800">Sentiment Distribution</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="h-[250px] w-full">
+                          <div className="chart-wrapper h-[250px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                               <PieChart>
                                 <Pie
                                   data={directorSentimentData}
                                   cx="50%"
-                                  cy="50%"
+                                  cy="40%"
                                   innerRadius={75}
                                   outerRadius={100}
                                   paddingAngle={5}
@@ -879,7 +898,7 @@ export default function Dashboard() {
                                   ))}
                                 </Pie>
                                 <Tooltip />
-                                <Legend verticalAlign="bottom" height={36}/>
+                                <Legend verticalAlign="bottom" height={48} wrapperStyle={{ paddingTop: '20px' }} />
                               </PieChart>
                             </ResponsiveContainer>
                           </div>
@@ -892,7 +911,7 @@ export default function Dashboard() {
                            <CardTitle className="text-base font-bold text-slate-800">Mentions Trend</CardTitle>
                         </CardHeader>
                         <CardContent>
-                           <div className="h-[250px] w-full">
+                           <div className="chart-wrapper h-[250px] w-full">
                               <ResponsiveContainer width="100%" height="100%">
                                  <AreaChart data={trendData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -987,6 +1006,26 @@ export default function Dashboard() {
 
         </div>
       </main>
+
+      {/* Export Overlay */}
+      {isExporting && (
+        <div className="fixed inset-0 z-[9999] bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center print:hidden">
+          <div className="bg-white p-8 rounded-2xl shadow-xl border border-slate-100 flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
+            <div className="relative">
+              <div className="h-16 w-16 rounded-full border-4 border-slate-100 border-t-[#005F99] animate-spin"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 text-[#005F99] animate-pulse" />
+              </div>
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-bold text-slate-800">Menyiapkan PDF...</h3>
+              <p className="text-sm text-slate-500 max-w-xs">
+                Sedang mengoptimalkan resolusi grafik untuk hasil cetak terbaik. Mohon tunggu sebentar.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
