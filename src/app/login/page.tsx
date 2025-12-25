@@ -33,8 +33,9 @@ export default function LoginPage() {
         setError('Email atau password salah. Silakan coba lagi.');
         setIsLoading(false);
       } else {
-        // Force full reload to ensure session cookies are picked up
-        window.location.href = '/';
+        // Redirect to dashboard or callbackUrl
+        const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl') || '/';
+        window.location.href = callbackUrl;
       }
     } catch (err) {
       setError('Terjadi kesalahan saat login. Silakan coba lagi nanti.');
