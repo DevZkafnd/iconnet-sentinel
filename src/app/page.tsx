@@ -239,10 +239,6 @@ export default function Dashboard() {
           .no-print { display: none !important; }
           .print-break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
           
-          /* Force block layout for grids to ensure width is calculated correctly */
-          /* REMOVED: .grid { display: block !important; } */
-          /* REMOVED: .grid > * { width: 100% !important; margin-bottom: 1rem; } */
-          
           .recharts-legend-wrapper { position: static !important; }
           .recharts-tooltip-wrapper { display: none !important; }
           
@@ -301,6 +297,21 @@ export default function Dashboard() {
           width: 0 !important;
           position: absolute !important;
           pointer-events: none !important;
+        }
+
+        /* 5. Force layout to match print layout during export */
+        html[data-exporting-pdf='true'] body {
+          min-width: 1200px !important;
+        }
+        html[data-exporting-pdf='true'] .main-container {
+          max-width: none !important;
+          width: 100% !important;
+        }
+        html[data-exporting-pdf='true'] .chart-grid {
+          grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+        }
+        html[data-exporting-pdf='true'] .hide-on-export {
+          display: none !important;
         }
       `}} />
       
@@ -405,7 +416,7 @@ export default function Dashboard() {
           </div>
 
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm flex flex-wrap h-auto justify-center sm:justify-start print:hidden">
+            <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm flex flex-wrap h-auto justify-center sm:justify-start print:hidden hide-on-export">
               <TabsTrigger value="overview" className="px-4 sm:px-6 py-2.5 rounded-lg data-[state=active]:bg-[#005F99] data-[state=active]:text-white flex-1 sm:flex-none">
                 <Activity className="w-4 h-4 mr-2" />
                 {t.tabOverview}
@@ -519,7 +530,7 @@ export default function Dashboard() {
                 </Card>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:grid-cols-1">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:grid-cols-1 chart-grid">
                 {/* Trend Chart */}
                 <Card className="lg:col-span-2 border-slate-200 shadow-sm card-print">
                   <CardHeader>
@@ -871,8 +882,7 @@ export default function Dashboard() {
                          </div>
                       </div>
                    </Card>
-
-                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-1">
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-1 chart-grid">
                       {/* Sentiment Chart */}
                       <Card className="border-slate-200 shadow-sm card-print">
                         <CardHeader>
