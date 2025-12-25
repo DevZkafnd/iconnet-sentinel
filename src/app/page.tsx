@@ -235,10 +235,29 @@ export default function Dashboard() {
           .grid { display: block !important; }
           .grid > * { width: 100% !important; margin-bottom: 1rem; }
           
-          /* Fix Recharts overflow and visibility in print */
-          .recharts-responsive-container { width: 100% !important; height: 100% !important; min-height: 300px; }
-          .recharts-wrapper { width: 100% !important; height: 100% !important; }
-          .recharts-surface { width: 100% !important; height: 100% !important; overflow: visible !important; }
+          /* CRITICAL: Fix Recharts visibility in print */
+          /* We must force a fixed size because responsive calculations fail in print */
+          .recharts-responsive-container {
+            width: 1000px !important;
+            height: 100% !important;
+            display: block !important;
+            overflow: visible !important;
+          }
+          
+          /* Ensure the inner wrapper also has size */
+          .recharts-wrapper {
+             width: 100% !important;
+             height: 100% !important;
+             display: block !important;
+          }
+          
+          /* Ensure SVG is visible */
+          .recharts-surface {
+             width: 100% !important;
+             height: 100% !important;
+             overflow: visible !important;
+          }
+          
           .recharts-legend-wrapper { position: static !important; }
           .recharts-tooltip-wrapper { display: none !important; }
           
