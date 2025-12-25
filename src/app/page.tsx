@@ -266,6 +266,8 @@ export default function Dashboard() {
             /* width: 900px !important; REMOVED FIXED WIDTH */
             width: 100% !important;
             height: 100% !important;
+            min-width: 100px !important; /* Safety net for Recharts width calculation */
+            min-height: 100px !important;
             /* display: block !important; REMOVED FORCE BLOCK */
             overflow: visible !important;
           }
@@ -276,8 +278,9 @@ export default function Dashboard() {
              /* width: 900px !important; REMOVED FIXED WIDTH */
              width: 100% !important;
              height: 100% !important;
+             min-width: 100px !important;
+             min-height: 100px !important;
              /* display: block !important; REMOVED FORCE BLOCK */
-             min-width: 0;
           }
           
           /* Ensure SVG is visible */
@@ -509,7 +512,7 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                      <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
                         <AreaChart data={trendData}>
                           <defs>
                             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
@@ -536,7 +539,7 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px] w-full flex items-center justify-center">
-                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                      <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
                         <PieChart>
                           <Pie
                             data={sentimentCounts}
@@ -570,7 +573,7 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                      <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
                         <BarChart layout="vertical" data={isuUtama} margin={{ left: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
                           <XAxis type="number" hide />
@@ -705,7 +708,7 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="h-[400px] w-full mb-8">
-                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
                       <BarChart data={analisisKompetitor} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                         <XAxis dataKey="nama" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
@@ -851,7 +854,7 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="h-[250px] w-full flex items-center justify-center">
-                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
                               <PieChart>
                                 <Pie
                                   data={directorSentimentData}
@@ -882,7 +885,7 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                            <div className="h-[250px] w-full">
-                              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                              <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
                                  <AreaChart data={trendData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                     <XAxis dataKey="hari" hide />
