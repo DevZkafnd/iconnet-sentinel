@@ -58,14 +58,14 @@ import {
   Languages
 } from 'lucide-react';
 import { 
-  directors, 
-  getTrendData, 
-  newsFeed, 
-  corporateStats, 
-  competitorAnalysis, 
-  topIssues,
-  Director, 
-  NewsItem 
+  daftarDirektur, 
+  dapatkanDataTren, 
+  umpanBerita, 
+  statistikKorporat, 
+  analisisKompetitor, 
+  isuUtama, 
+  Direktur, 
+  ItemBerita 
 } from '@/data/dummyData';
 import { translations } from '@/data/translations';
 import { cn } from '@/lib/utils';
@@ -75,7 +75,7 @@ export default function Dashboard() {
   const [language, setLanguage] = useState<'id' | 'en'>('id');
   const t = translations[language];
 
-  const [selectedDirector, setSelectedDirector] = useState<Director>(directors[0]);
+  const [selectedDirector, setSelectedDirector] = useState<Direktur>(daftarDirektur[0]);
   
   // Dashboard Configuration
   const [datePeriod] = useState("1 Januari 2024 - 31 Januari 2024");
@@ -93,17 +93,17 @@ export default function Dashboard() {
   const [directorSelectedSentiment, setDirectorSelectedSentiment] = useState("all");
 
   // Memoize data
-  const trendData = useMemo(() => getTrendData(selectedDirector.id), [selectedDirector.id]);
+  const trendData = useMemo(() => dapatkanDataTren(selectedDirector.id), [selectedDirector.id]);
   
   const corporateNewsList = useMemo(() => {
-    let filtered = [...newsFeed];
+    let filtered = [...umpanBerita];
 
     // Apply filters
     if (searchKeyword) {
       const lower = searchKeyword.toLowerCase();
       filtered = filtered.filter(item => 
-        item.title.toLowerCase().includes(lower) || 
-        item.source.toLowerCase().includes(lower)
+        item.judul.toLowerCase().includes(lower) || 
+        item.sumber.toLowerCase().includes(lower)
       );
     }
 
@@ -118,13 +118,13 @@ export default function Dashboard() {
 
     if (selectedProduct !== 'all') {
       filtered = filtered.filter(item => {
-        const dir = directors.find(d => d.id === item.directorId);
-        return dir && dir.product === selectedProduct;
+        const dir = daftarDirektur.find(d => d.id === item.idDirektur);
+        return dir && dir.produk === selectedProduct;
       });
     }
 
     if (selectedSentiment !== 'all') {
-      filtered = filtered.filter(item => item.sentiment === selectedSentiment);
+      filtered = filtered.filter(item => item.sentimen === selectedSentiment);
     }
 
     // Sort by date (mock) or id descending to show "latest"
@@ -135,9 +135,9 @@ export default function Dashboard() {
     const counts = { positive: 0, neutral: 0, negative: 0 };
     corporateNewsList.forEach(news => {
       // @ts-ignore
-      if (counts[news.sentiment] !== undefined) {
+      if (counts[news.sentimen] !== undefined) {
         // @ts-ignore
-        counts[news.sentiment]++;
+        counts[news.sentimen]++;
       }
     });
     return [
@@ -148,22 +148,22 @@ export default function Dashboard() {
   }, [corporateNewsList, t]);
 
   const topPositiveNews = useMemo(() => {
-    return corporateNewsList.filter(n => n.sentiment === 'positive').slice(0, 10);
+    return corporateNewsList.filter(n => n.sentimen === 'positive').slice(0, 10);
   }, [corporateNewsList]);
 
   const topNegativeNews = useMemo(() => {
-    return corporateNewsList.filter(n => n.sentiment === 'negative').slice(0, 10);
+    return corporateNewsList.filter(n => n.sentimen === 'negative').slice(0, 10);
   }, [corporateNewsList]);
 
   const directorNewsList = useMemo(() => {
-    let directorNews = newsFeed.filter(news => news.directorId === selectedDirector.id);
+    let directorNews = umpanBerita.filter(news => news.idDirektur === selectedDirector.id);
     
     // Apply Director Tab Filters
     if (directorSearchKeyword) {
       const lower = directorSearchKeyword.toLowerCase();
       directorNews = directorNews.filter(item => 
-        item.title.toLowerCase().includes(lower) || 
-        item.source.toLowerCase().includes(lower)
+        item.judul.toLowerCase().includes(lower) || 
+        item.sumber.toLowerCase().includes(lower)
       );
     }
     
@@ -177,7 +177,7 @@ export default function Dashboard() {
     }
 
     if (directorSelectedSentiment !== 'all') {
-      directorNews = directorNews.filter(item => item.sentiment === directorSelectedSentiment);
+      directorNews = directorNews.filter(item => item.sentimen === directorSelectedSentiment);
     }
 
     // Sort by id descending
@@ -185,9 +185,9 @@ export default function Dashboard() {
   }, [selectedDirector.id, directorSearchKeyword, directorSelectedPlatform, directorSelectedSentiment]);
 
   const directorSentimentData = useMemo(() => [
-    { name: t.positive, value: selectedDirector.stats.positive, color: '#10B981' }, // Success Green
-    { name: t.neutral, value: selectedDirector.stats.neutral, color: '#F59E0B' },  // Warning Amber
-    { name: t.negative, value: selectedDirector.stats.negative, color: '#EF4444' }, // Danger Red
+    { name: t.positive, value: selectedDirector.statistik.positif, color: '#10B981' }, // Success Green
+    { name: t.neutral, value: selectedDirector.statistik.netral, color: '#F59E0B' },  // Warning Amber
+    { name: t.negative, value: selectedDirector.statistik.negatif, color: '#EF4444' }, // Danger Red
   ], [selectedDirector, t]);
 
   const getSentimentColor = (score: number) => {
@@ -196,7 +196,7 @@ export default function Dashboard() {
     return 'text-amber-600';
   };
 
-  const getPlatformIcon = (platform: NewsItem['platform']) => {
+  const getPlatformIcon = (platform: ItemBerita['platform']) => {
     switch (platform) {
       case 'Instagram': return <Instagram className="h-4 w-4 text-pink-600" />;
       case 'Facebook': return <Facebook className="h-4 w-4 text-blue-600" />;
@@ -226,16 +226,26 @@ export default function Dashboard() {
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans text-slate-900">
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          @page { margin: 1cm; size: landscape; }
+          @page { margin: 0.5cm; size: landscape; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white !important; }
           .no-print { display: none !important; }
           .print-break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
           
-          /* Fix Recharts overflow in print */
-          .recharts-responsive-container { width: 100% !important; }
-          .recharts-wrapper { max-width: 100% !important; }
-          .recharts-surface { max-width: 100% !important; overflow: visible; }
+          /* Force block layout for grids to ensure width is calculated correctly */
+          .grid { display: block !important; }
+          .grid > * { width: 100% !important; margin-bottom: 1rem; }
+          
+          /* Fix Recharts overflow and visibility in print */
+          .recharts-responsive-container { width: 100% !important; height: 100% !important; min-height: 300px; }
+          .recharts-wrapper { width: 100% !important; height: 100% !important; }
+          .recharts-surface { width: 100% !important; height: 100% !important; overflow: visible !important; }
+          .recharts-legend-wrapper { position: static !important; }
           .recharts-tooltip-wrapper { display: none !important; }
+          
+          /* Ensure explicit heights for chart containers are respected */
+          .h-\[300px\] { height: 300px !important; }
+          .h-\[400px\] { height: 400px !important; }
+          .h-\[250px\] { height: 250px !important; }
           
           /* Hide scrollbars in print */
           ::-webkit-scrollbar { display: none; }
@@ -373,8 +383,8 @@ export default function Dashboard() {
                       onChange={(e) => setSelectedProduct(e.target.value)}
                     >
                       <option value="all">{t.allProducts}</option>
-                      {directors.map(d => (
-                        <option key={d.id} value={d.product}>{d.product} ({d.name})</option>
+                      {daftarDirektur.map(d => (
+                        <option key={d.id} value={d.produk}>{d.produk} ({d.nama})</option>
                       ))}
                     </select>
                   </div>
@@ -394,7 +404,7 @@ export default function Dashboard() {
               </Card>
 
               {/* Alert System */}
-              {corporateStats.sentimentScore < 50 && (
+              {statistikKorporat.skorSentimen < 50 && (
                 <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle>{t.negSentimentTitle}</AlertTitle>
@@ -412,9 +422,9 @@ export default function Dashboard() {
                     <MessageSquare className="h-4 w-4 text-[#00AEEF]" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-[#005F99]">{corporateStats.totalMentions.toLocaleString()}</div>
+                    <div className="text-3xl font-bold text-[#005F99]">{statistikKorporat.totalSebutan.toLocaleString()}</div>
                     <p className="text-xs text-slate-500 mt-1">
-                      <span className="text-emerald-600 font-medium">+{corporateStats.mentionsChange}%</span> {t.kpiMentionsDesc}
+                      <span className="text-emerald-600 font-medium">+{statistikKorporat.perubahanSebutan}%</span> {t.kpiMentionsDesc}
                     </p>
                   </CardContent>
                 </Card>
@@ -424,7 +434,7 @@ export default function Dashboard() {
                     <Activity className="h-4 w-4 text-[#00AEEF]" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-[#005F99]">{corporateStats.sentimentScore}%</div>
+                    <div className="text-3xl font-bold text-[#005F99]">{statistikKorporat.skorSentimen}%</div>
                     <p className="text-xs text-slate-500 mt-1">{t.kpiSentimentDesc}</p>
                   </CardContent>
                 </Card>
@@ -434,7 +444,7 @@ export default function Dashboard() {
                     <Users className="h-4 w-4 text-[#00AEEF]" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-[#005F99]">{corporateStats.potentialReach}</div>
+                    <div className="text-3xl font-bold text-[#005F99]">{statistikKorporat.potensiJangkauan}</div>
                     <p className="text-xs text-slate-500 mt-1">{t.kpiReachDesc}</p>
                   </CardContent>
                 </Card>
@@ -458,27 +468,24 @@ export default function Dashboard() {
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                          <XAxis dataKey="day" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                          <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                          <Tooltip 
-                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                            itemStyle={{ color: '#005F99', fontWeight: 'bold' }}
-                          />
-                          <Area type="monotone" dataKey="mentions" stroke="#00AEEF" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" isAnimationActive={false} />
+                          <XAxis dataKey="hari" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                          <Tooltip contentStyle={{ borderRadius: '8px' }} />
+                          <Area type="monotone" dataKey="sebutan" stroke="#00AEEF" fill="url(#colorValue)" strokeWidth={2} isAnimationActive={false} />
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Detailed Sentiment Analysis (New) */}
+                {/* Sentiment Distribution */}
                 <Card className="border-slate-200 shadow-sm card-print">
                   <CardHeader>
                     <CardTitle className="text-lg font-bold text-slate-800">{t.sentimentDetailTitle}</CardTitle>
                     <CardDescription>{t.sentimentDetailDesc}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-[300px] w-full">
+                    <div className="h-[300px] w-full flex items-center justify-center">
                       <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                         <PieChart>
                           <Pie
@@ -495,8 +502,8 @@ export default function Dashboard() {
                               <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                           </Pie>
-                          <Tooltip contentStyle={{ borderRadius: '8px' }} />
-                          <Legend verticalAlign="bottom" height={36} />
+                          <Tooltip />
+                          <Legend verticalAlign="bottom" height={36}/>
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
@@ -506,7 +513,7 @@ export default function Dashboard() {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Top Issues (Moved) */}
-                <Card className="border-slate-200 shadow-sm">
+                <Card className="border-slate-200 shadow-sm card-print">
                   <CardHeader>
                     <CardTitle className="text-lg font-bold text-slate-800">{t.topIssuesTitle}</CardTitle>
                     <CardDescription>{t.topIssuesDesc}</CardDescription>
@@ -514,12 +521,12 @@ export default function Dashboard() {
                   <CardContent>
                     <div className="h-[300px] w-full">
                       <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                        <BarChart layout="vertical" data={topIssues} margin={{ left: 0 }}>
+                        <BarChart layout="vertical" data={isuUtama} margin={{ left: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
                           <XAxis type="number" hide />
-                          <YAxis dataKey="topic" type="category" width={100} stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
+                          <YAxis dataKey="topik" type="category" width={100} stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
                           <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{ borderRadius: '8px' }} />
-                          <Bar dataKey="count" fill="#005F99" radius={[0, 4, 4, 0]} barSize={20} isAnimationActive={false} />
+                          <Bar dataKey="jumlah" fill="#005F99" radius={[0, 4, 4, 0]} barSize={20} isAnimationActive={false} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -541,22 +548,22 @@ export default function Dashboard() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs font-semibold text-[#005F99] bg-blue-50 px-2 py-0.5 rounded-full">{news.source}</span>
-                              <span className="text-xs text-slate-400">{news.date}</span>
+                              <span className="text-xs font-semibold text-[#005F99] bg-blue-50 px-2 py-0.5 rounded-full">{news.sumber}</span>
+                              <span className="text-xs text-slate-400">{news.tanggal}</span>
                             </div>
-                            <a href={news.url} target="_blank" rel="noopener noreferrer" className="group/link block">
+                            <a href={news.tautan} target="_blank" rel="noopener noreferrer" className="group/link block">
                                 <p className="text-sm font-medium text-slate-800 leading-snug group-hover/link:text-[#005F99] transition-colors flex items-center gap-1">
-                                    {news.title}
+                                    {news.judul}
                                     <ExternalLink className="h-3 w-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
                                 </p>
                             </a>
                             <div className="flex items-center gap-2 mt-2">
                                <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5 font-normal", 
-                                  news.sentiment === 'positive' ? "border-green-200 text-green-700 bg-green-50" :
-                                  news.sentiment === 'negative' ? "border-red-200 text-red-700 bg-red-50" :
+                                  news.sentimen === 'positive' ? "border-green-200 text-green-700 bg-green-50" :
+                                  news.sentimen === 'negative' ? "border-red-200 text-red-700 bg-red-50" :
                                   "border-amber-200 text-amber-700 bg-amber-50"
                                )}>
-                                 {getSentimentLabel(news.sentiment)}
+                                 {getSentimentLabel(news.sentimen)}
                                </Badge>
                             </div>
                           </div>
@@ -584,16 +591,16 @@ export default function Dashboard() {
                                     <div className="flex items-start gap-3">
                                         <div className="mt-1">{getPlatformIcon(news.platform)}</div>
                                         <div className="flex-1 min-w-0">
-                                            <a href={news.url} target="_blank" rel="noopener noreferrer" className="group/link">
+                                            <a href={news.tautan} target="_blank" rel="noopener noreferrer" className="group/link">
                                                 <p className="text-sm font-medium text-slate-900 leading-snug hover:text-green-700 transition-colors line-clamp-2 mb-1">
-                                                    {news.title}
+                                                    {news.judul}
                                                     <ExternalLink className="inline-block ml-1 h-3 w-3 opacity-0 group-hover/link:opacity-100" />
                                                 </p>
                                             </a>
                                             <div className="flex items-center gap-2 text-xs text-slate-500">
-                                                <span>{news.source}</span>
+                                                <span>{news.sumber}</span>
                                                 <span>•</span>
-                                                <span>{news.date}</span>
+                                                <span>{news.tanggal}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -618,16 +625,16 @@ export default function Dashboard() {
                                     <div className="flex items-start gap-3">
                                         <div className="mt-1">{getPlatformIcon(news.platform)}</div>
                                         <div className="flex-1 min-w-0">
-                                            <a href={news.url} target="_blank" rel="noopener noreferrer" className="group/link">
+                                            <a href={news.tautan} target="_blank" rel="noopener noreferrer" className="group/link">
                                                 <p className="text-sm font-medium text-slate-900 leading-snug hover:text-red-700 transition-colors line-clamp-2 mb-1">
-                                                    {news.title}
+                                                    {news.judul}
                                                     <ExternalLink className="inline-block ml-1 h-3 w-3 opacity-0 group-hover/link:opacity-100" />
                                                 </p>
                                             </a>
                                             <div className="flex items-center gap-2 text-xs text-slate-500">
-                                                <span>{news.source}</span>
+                                                <span>{news.sumber}</span>
                                                 <span>•</span>
-                                                <span>{news.date}</span>
+                                                <span>{news.tanggal}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -641,7 +648,7 @@ export default function Dashboard() {
 
             {/* COMPETITORS TAB */}
             <TabsContent value="competitors" className="space-y-6">
-              <Card className="border-slate-200 shadow-sm">
+              <Card className="border-slate-200 shadow-sm card-print">
                 <CardHeader>
                   <CardTitle className="text-lg font-bold text-slate-800">{t.compAnalysisTitle}</CardTitle>
                   <CardDescription>{t.compAnalysisDesc}</CardDescription>
@@ -649,15 +656,15 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="h-[400px] w-full mb-8">
                     <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                      <BarChart data={competitorAnalysis} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <BarChart data={analisisKompetitor} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                        <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                        <XAxis dataKey="nama" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
                         <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
                         <Tooltip contentStyle={{ borderRadius: '8px' }} />
                         <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                        <Bar dataKey="positive" name={t.positive} stackId="a" fill="#10B981" isAnimationActive={false} />
-                        <Bar dataKey="neutral" name={t.neutral} stackId="a" fill="#F59E0B" isAnimationActive={false} />
-                        <Bar dataKey="negative" name={t.negative} stackId="a" fill="#EF4444" isAnimationActive={false} />
+                        <Bar dataKey="positif" name={t.positive} stackId="a" fill="#10B981" isAnimationActive={false} />
+                        <Bar dataKey="netral" name={t.neutral} stackId="a" fill="#F59E0B" isAnimationActive={false} />
+                        <Bar dataKey="negatif" name={t.negative} stackId="a" fill="#EF4444" isAnimationActive={false} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -677,19 +684,19 @@ export default function Dashboard() {
                             </tr>
                         </thead>
                         <tbody>
-                            {competitorAnalysis.map((comp, index) => {
-                                const total = comp.positive + comp.neutral + comp.negative;
-                                const grandTotal = competitorAnalysis.reduce((acc, curr) => acc + curr.positive + curr.neutral + curr.negative, 0);
-                                const sentimentScore = Math.round((comp.positive / total) * 100);
+                            {analisisKompetitor.map((comp, index) => {
+                                const total = comp.positif + comp.netral + comp.negatif;
+                                const grandTotal = analisisKompetitor.reduce((acc, curr) => acc + curr.positif + curr.netral + curr.negatif, 0);
+                                const sentimentScore = Math.round((comp.positif / total) * 100);
                                 const shareOfVoice = ((total / grandTotal) * 100).toFixed(1);
 
                                 return (
                                     <tr key={index} className="bg-white border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                        <td className="px-6 py-4 font-medium text-slate-900">{comp.name}</td>
+                                        <td className="px-6 py-4 font-medium text-slate-900">{comp.nama}</td>
                                         <td className="px-6 py-4 text-center font-semibold">{total.toLocaleString()}</td>
-                                        <td className="px-6 py-4 text-center text-green-600 font-medium">{comp.positive}</td>
-                                        <td className="px-6 py-4 text-center text-amber-600 font-medium">{comp.neutral}</td>
-                                        <td className="px-6 py-4 text-center text-red-600 font-medium">{comp.negative}</td>
+                                        <td className="px-6 py-4 text-center text-green-600 font-medium">{comp.positif}</td>
+                                        <td className="px-6 py-4 text-center text-amber-600 font-medium">{comp.netral}</td>
+                                        <td className="px-6 py-4 text-center text-red-600 font-medium">{comp.negatif}</td>
                                         <td className="px-6 py-4 text-center">
                                             <Badge variant="outline" className={cn("font-semibold", 
                                                 sentimentScore >= 70 ? "text-green-700 border-green-200 bg-green-50" :
@@ -720,7 +727,7 @@ export default function Dashboard() {
                       <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">{t.directorsListTitle}</CardTitle>
                     </CardHeader>
                     <CardContent className="p-2 grid gap-1">
-                      {directors.map((director) => (
+                      {daftarDirektur.map((director) => (
                         <button
                           key={director.id}
                           onClick={() => setSelectedDirector(director)}
@@ -732,13 +739,13 @@ export default function Dashboard() {
                           )}
                         >
                           <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
-                            <AvatarImage src={director.image} />
-                            <AvatarFallback>{director.name.charAt(0)}</AvatarFallback>
+                            <AvatarImage src={director.gambar} />
+                            <AvatarFallback>{director.nama.charAt(0)}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <p className="truncate font-semibold">{director.name}</p>
-                            <p className="truncate text-xs text-slate-500 font-normal">{director.title}</p>
-                            <p className="truncate text-[10px] text-[#005F99] font-medium mt-0.5">{director.product}</p>
+                            <p className="truncate font-semibold">{director.nama}</p>
+                            <p className="truncate text-xs text-slate-500 font-normal">{director.jabatan}</p>
+                            <p className="truncate text-[10px] text-[#005F99] font-medium mt-0.5">{director.produk}</p>
                           </div>
                           {selectedDirector.id === director.id && (
                             <ChevronRight className="h-4 w-4 text-[#00AEEF]" />
@@ -760,23 +767,23 @@ export default function Dashboard() {
                          <div className="relative">
                            <div className="h-24 w-24 rounded-full p-1 bg-white shadow-lg ring-4 ring-slate-50">
                              <Avatar className="h-full w-full">
-                               <AvatarImage src={selectedDirector.image} />
-                               <AvatarFallback className="text-2xl">{selectedDirector.name.charAt(0)}</AvatarFallback>
+                               <AvatarImage src={selectedDirector.gambar} />
+                               <AvatarFallback className="text-2xl">{selectedDirector.nama.charAt(0)}</AvatarFallback>
                              </Avatar>
                            </div>
                            <Badge className={cn("absolute -bottom-2 left-1/2 -translate-x-1/2 shadow-sm whitespace-nowrap", 
-                             selectedDirector.sentiment >= 70 ? "bg-[#10B981] hover:bg-[#059669]" : "bg-[#F59E0B] hover:bg-[#D97706]"
+                             selectedDirector.sentimen >= 70 ? "bg-[#10B981] hover:bg-[#059669]" : "bg-[#F59E0B] hover:bg-[#D97706]"
                           )}>
-                             {selectedDirector.sentiment}% {t.directorPosSentiment}
+                             {selectedDirector.sentimen}% {t.directorPosSentiment}
                           </Badge>
                         </div>
                         <div className="text-center md:text-left flex-1">
-                           <h2 className="text-2xl font-bold text-slate-900">{selectedDirector.name}</h2>
-                           <p className="text-[#005F99] font-medium">{selectedDirector.title}</p>
-                           <p className="text-slate-500 text-sm mt-1">{selectedDirector.product}</p>
+                           <h2 className="text-2xl font-bold text-slate-900">{selectedDirector.nama}</h2>
+                           <p className="text-[#005F99] font-medium">{selectedDirector.jabatan}</p>
+                           <p className="text-slate-500 text-sm mt-1">{selectedDirector.produk}</p>
                            
                            <div className="flex flex-wrap gap-2 mt-4 justify-center md:justify-start">
-                              {selectedDirector.topKeywords?.map((keyword, i) => (
+                              {selectedDirector.kataKunciUtama?.map((keyword, i) => (
                                 <Badge key={i} variant="secondary" className="bg-slate-100 text-slate-600 hover:bg-slate-200">
                                   #{keyword}
                                 </Badge>
@@ -788,7 +795,7 @@ export default function Dashboard() {
 
                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {/* Sentiment Chart */}
-                      <Card className="border-slate-200 shadow-sm">
+                      <Card className="border-slate-200 shadow-sm card-print">
                         <CardHeader>
                           <CardTitle className="text-base font-bold text-slate-800">Sentiment Distribution</CardTitle>
                         </CardHeader>
@@ -828,9 +835,9 @@ export default function Dashboard() {
                               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                  <AreaChart data={trendData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="day" hide />
+                                    <XAxis dataKey="hari" hide />
                                    <Tooltip contentStyle={{ borderRadius: '8px' }} />
-                                   <Area type="monotone" dataKey="mentions" stroke="#00AEEF" fill="#00AEEF" fillOpacity={0.1} isAnimationActive={false} />
+                                   <Area type="monotone" dataKey="sebutan" stroke="#00AEEF" fill="#00AEEF" fillOpacity={0.1} isAnimationActive={false} />
                                 </AreaChart>
                               </ResponsiveContainer>
                            </div>
@@ -844,7 +851,7 @@ export default function Dashboard() {
                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                          <div>
                             <CardTitle className="text-lg font-bold text-slate-800">{t.verbatimTitle}</CardTitle>
-                            <CardDescription>{t.verbatimDescDirector} {selectedDirector.name}</CardDescription>
+                            <CardDescription>{t.verbatimDescDirector} {selectedDirector.nama}</CardDescription>
                           </div>
                          <div className="flex gap-2 no-print">
                             <div className="relative w-full md:w-48">
@@ -888,17 +895,17 @@ export default function Dashboard() {
                                </div>
                                <div className="flex-1 min-w-0">
                                  <div className="flex items-center justify-between mb-1">
-                                   <span className="text-xs font-semibold text-[#005F99] bg-blue-50 px-2 py-0.5 rounded-full">{news.source}</span>
-                                   <span className="text-xs text-slate-400">{news.date}</span>
+                                   <span className="text-xs font-semibold text-[#005F99] bg-blue-50 px-2 py-0.5 rounded-full">{news.sumber}</span>
+                                   <span className="text-xs text-slate-400">{news.tanggal}</span>
                                  </div>
-                                 <p className="text-sm font-medium text-slate-800 leading-snug">{news.title}</p>
+                                 <p className="text-sm font-medium text-slate-800 leading-snug">{news.judul}</p>
                                  <div className="flex items-center gap-2 mt-2">
                                     <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5 font-normal", 
-                                       news.sentiment === 'positive' ? "border-green-200 text-green-700 bg-green-50" :
-                                       news.sentiment === 'negative' ? "border-red-200 text-red-700 bg-red-50" :
+                                       news.sentimen === 'positive' ? "border-green-200 text-green-700 bg-green-50" :
+                                       news.sentimen === 'negative' ? "border-red-200 text-red-700 bg-red-50" :
                                        "border-amber-200 text-amber-700 bg-amber-50"
                                     )}>
-                                      {getSentimentLabel(news.sentiment)}
+                                      {getSentimentLabel(news.sentimen)}
                                     </Badge>
                                  </div>
                                </div>

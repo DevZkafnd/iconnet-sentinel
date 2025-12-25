@@ -72,7 +72,7 @@ export default function LoginPage() {
                 <Input 
                   id="email" 
                   name="email"
-                  autoComplete="email"
+                  autoComplete="username"
                   type="email" 
                   placeholder="admin@iconpln.co.id" 
                   className="pl-10"
