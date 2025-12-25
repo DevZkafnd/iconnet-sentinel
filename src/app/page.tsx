@@ -260,33 +260,24 @@ export default function Dashboard() {
           /* REMOVED: .grid > * { width: 100% !important; margin-bottom: 1rem; } */
           
           /* CRITICAL: Fix Recharts visibility in print */
-          /* Using fixed px width (approx A4 landscape content width) instead of 100% is more reliable */
-          html[data-exporting-pdf='true'] .recharts-responsive-container,
-          .recharts-responsive-container {
-            /* width: 900px !important; REMOVED FIXED WIDTH */
+          html[data-exporting-pdf='true'] .recharts-responsive-container {
             width: 100% !important;
             height: 100% !important;
-            min-width: 500px !important; /* Force large width to prevent "small and messy" charts */
+            min-width: 500px !important;
             min-height: 300px !important;
-            /* display: block !important; REMOVED FORCE BLOCK */
             overflow: visible !important;
           }
           
           /* Ensure the inner wrapper also has size */
-          html[data-exporting-pdf='true'] .recharts-wrapper,
-          .recharts-wrapper {
-             /* width: 900px !important; REMOVED FIXED WIDTH */
+          html[data-exporting-pdf='true'] .recharts-wrapper {
              width: 100% !important;
              height: 100% !important;
              min-width: 500px !important;
              min-height: 300px !important;
-             /* display: block !important; REMOVED FORCE BLOCK */
           }
           
           /* Ensure SVG is visible */
-          html[data-exporting-pdf='true'] .recharts-surface,
-          .recharts-surface {
-             /* width: 900px !important; REMOVED FIXED WIDTH */
+          html[data-exporting-pdf='true'] .recharts-surface {
              width: 100% !important;
              height: 100% !important;
              overflow: visible !important;
@@ -306,6 +297,12 @@ export default function Dashboard() {
           
           /* Ensure cards don't break awkwardly */
           .card-print { break-inside: avoid; page-break-inside: avoid; border: 1px solid #e2e8f0; box-shadow: none; margin-bottom: 1rem; }
+
+          /* Hide inactive tabs explicitly during export */
+          html[data-exporting-pdf='true'] [role="tabpanel"][data-state="inactive"],
+          [role="tabpanel"][data-state="inactive"] {
+            display: none !important;
+          }
         }
       `}} />
 
@@ -513,7 +510,7 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%" minWidth={500} minHeight={400}>
+                      <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={trendData}>
                           <defs>
                             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
@@ -540,7 +537,7 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%" minWidth={400} minHeight={400}>
+                      <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={sentimentCounts}
@@ -719,7 +716,7 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="h-[400px] w-full mb-8">
-                    <ResponsiveContainer width="100%" height="100%" minWidth={500} minHeight={500}>
+                    <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={analisisKompetitor} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                         <XAxis dataKey="nama" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
@@ -865,7 +862,7 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="h-[250px] w-full">
-                            <ResponsiveContainer width="100%" height="100%" minWidth={400} minHeight={350}>
+                            <ResponsiveContainer width="100%" height="100%">
                               <PieChart>
                                 <Pie
                                   data={directorSentimentData}
@@ -896,7 +893,7 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                            <div className="h-[250px] w-full">
-                              <ResponsiveContainer width="100%" height="100%" minWidth={600} minHeight={350}>
+                              <ResponsiveContainer width="100%" height="100%">
                                  <AreaChart data={trendData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                     <XAxis dataKey="hari" hide />
