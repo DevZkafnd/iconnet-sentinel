@@ -156,8 +156,28 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans text-slate-900">
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          @page { margin: 1cm; size: landscape; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white !important; }
+          .no-print { display: none !important; }
+          .print-break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
+          
+          /* Fix Recharts overflow in print */
+          .recharts-responsive-container { width: 100% !important; }
+          .recharts-wrapper { max-width: 100% !important; }
+          .recharts-surface { max-width: 100% !important; overflow: visible; }
+          
+          /* Hide scrollbars in print */
+          ::-webkit-scrollbar { display: none; }
+          
+          /* Ensure cards don't break awkwardly */
+          .card-print { break-inside: avoid; page-break-inside: avoid; border: 1px solid #e2e8f0; box-shadow: none; margin-bottom: 1rem; }
+        }
+      `}} />
+
       {/* Topbar */}
-      <header className="bg-white border-b border-slate-200 h-16 flex items-center px-4 lg:px-8 justify-between sticky top-0 z-50 shadow-sm">
+      <header className="bg-white border-b border-slate-200 h-16 flex items-center px-4 lg:px-8 justify-between sticky top-0 z-50 shadow-sm print:hidden">
         <div className="flex items-center gap-3">
           <div className="bg-[#005F99] p-2 rounded-lg">
             <ShieldCheck className="h-6 w-6 text-white" />
@@ -204,11 +224,11 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4 lg:p-8">
-        <div className="max-w-7xl mx-auto space-y-8">
+      <main className="flex-1 overflow-y-auto p-4 lg:p-8 print:p-0 print:overflow-visible">
+        <div className="max-w-7xl mx-auto space-y-8 print:max-w-none print:space-y-4">
           
           {/* Dashboard Context Info */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 print:border-none print:shadow-none print:p-0 print:mb-4">
             <div className="flex items-center gap-3">
               <div className="bg-blue-50 p-2 rounded-lg">
                 <Calendar className="h-5 w-5 text-[#005F99]" />
@@ -237,16 +257,16 @@ export default function Dashboard() {
           </div>
 
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm inline-flex h-auto">
-              <TabsTrigger value="overview" className="px-6 py-2.5 rounded-lg data-[state=active]:bg-[#005F99] data-[state=active]:text-white">
+            <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm flex flex-wrap h-auto justify-center sm:justify-start print:hidden">
+              <TabsTrigger value="overview" className="px-4 sm:px-6 py-2.5 rounded-lg data-[state=active]:bg-[#005F99] data-[state=active]:text-white flex-1 sm:flex-none">
                 <Activity className="w-4 h-4 mr-2" />
                 {t.tabOverview}
               </TabsTrigger>
-              <TabsTrigger value="competitors" className="px-6 py-2.5 rounded-lg data-[state=active]:bg-[#005F99] data-[state=active]:text-white">
+              <TabsTrigger value="competitors" className="px-4 sm:px-6 py-2.5 rounded-lg data-[state=active]:bg-[#005F99] data-[state=active]:text-white flex-1 sm:flex-none">
                 <Target className="w-4 h-4 mr-2" />
                 {t.tabCompetitors}
               </TabsTrigger>
-              <TabsTrigger value="directors" className="px-6 py-2.5 rounded-lg data-[state=active]:bg-[#005F99] data-[state=active]:text-white">
+              <TabsTrigger value="directors" className="px-4 sm:px-6 py-2.5 rounded-lg data-[state=active]:bg-[#005F99] data-[state=active]:text-white flex-1 sm:flex-none">
                 <Users className="w-4 h-4 mr-2" />
                 {t.tabDirectors}
               </TabsTrigger>
@@ -267,7 +287,7 @@ export default function Dashboard() {
 
               {/* KPI Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow card-print">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wider">{t.kpiTotalMentions}</CardTitle>
                     <MessageSquare className="h-4 w-4 text-[#00AEEF]" />
@@ -303,7 +323,7 @@ export default function Dashboard() {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Trend Chart */}
-                <Card className="lg:col-span-2 border-slate-200 shadow-sm">
+                <Card className="lg:col-span-2 border-slate-200 shadow-sm card-print">
                   <CardHeader>
                     <CardTitle className="text-lg font-bold text-slate-800">{t.trendTitle}</CardTitle>
                     <CardDescription>{t.trendDesc}</CardDescription>
@@ -333,7 +353,7 @@ export default function Dashboard() {
                 </Card>
 
                 {/* Detailed Sentiment Analysis (New) */}
-                <Card className="border-slate-200 shadow-sm">
+                <Card className="border-slate-200 shadow-sm card-print">
                   <CardHeader>
                     <CardTitle className="text-lg font-bold text-slate-800">{t.sentimentDetailTitle}</CardTitle>
                     <CardDescription>{t.sentimentDetailDesc}</CardDescription>
@@ -598,6 +618,7 @@ export default function Dashboard() {
                           <div className="flex-1 min-w-0">
                             <p className="truncate font-semibold">{director.name}</p>
                             <p className="truncate text-xs text-slate-500 font-normal">{director.title}</p>
+                            <p className="truncate text-[10px] text-[#005F99] font-medium mt-0.5">{director.product}</p>
                           </div>
                           {selectedDirector.id === director.id && (
                             <ChevronRight className="h-4 w-4 text-[#00AEEF]" />
