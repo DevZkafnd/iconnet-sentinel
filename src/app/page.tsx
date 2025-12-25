@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -12,12 +12,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
-  LineChart,
-  Line,
   AreaChart,
   Area,
   BarChart,
@@ -33,13 +30,10 @@ import {
   Legend
 } from 'recharts';
 import {
-  User,
   Activity,
   TrendingUp,
   MessageSquare,
   Search,
-  Bell,
-  Menu,
   LogOut,
   ChevronRight,
   ShieldCheck,
@@ -92,6 +86,34 @@ export default function Dashboard() {
   const [directorSelectedPlatform, setDirectorSelectedPlatform] = useState("all");
   const [directorSelectedSentiment, setDirectorSelectedSentiment] = useState("all");
 
+  useEffect(() => {
+    const startPrintMode = () => {
+      document.documentElement.setAttribute('data-exporting-pdf', 'true');
+      window.dispatchEvent(new Event('resize'));
+    };
+
+    const stopPrintMode = () => {
+      document.documentElement.removeAttribute('data-exporting-pdf');
+      window.dispatchEvent(new Event('resize'));
+    };
+
+    window.addEventListener('beforeprint', startPrintMode);
+    window.addEventListener('afterprint', stopPrintMode);
+
+    const mediaQueryList = window.matchMedia('print');
+    const onMediaChange = (e: MediaQueryListEvent) => {
+      if (e.matches) startPrintMode();
+      else stopPrintMode();
+    };
+    mediaQueryList.addEventListener?.('change', onMediaChange);
+
+    return () => {
+      window.removeEventListener('beforeprint', startPrintMode);
+      window.removeEventListener('afterprint', stopPrintMode);
+      mediaQueryList.removeEventListener?.('change', onMediaChange);
+    };
+  }, []);
+
   // Memoize data
   const trendData = useMemo(() => dapatkanDataTren(selectedDirector.id), [selectedDirector.id]);
   
@@ -132,13 +154,9 @@ export default function Dashboard() {
   }, [searchKeyword, selectedPlatform, selectedProduct, selectedSentiment]);
 
   const sentimentCounts = useMemo(() => {
-    const counts = { positive: 0, neutral: 0, negative: 0 };
+    const counts: Record<ItemBerita['sentimen'], number> = { positive: 0, neutral: 0, negative: 0 };
     corporateNewsList.forEach(news => {
-      // @ts-ignore
-      if (counts[news.sentimen] !== undefined) {
-        // @ts-ignore
-        counts[news.sentimen]++;
-      }
+      counts[news.sentimen]++;
     });
     return [
       { name: t.positive, value: counts.positive, color: '#10B981' },
@@ -190,12 +208,6 @@ export default function Dashboard() {
     { name: t.negative, value: selectedDirector.statistik.negatif, color: '#EF4444' }, // Danger Red
   ], [selectedDirector, t]);
 
-  const getSentimentColor = (score: number) => {
-    if (score >= 70) return 'text-emerald-600';
-    if (score < 50) return 'text-red-600';
-    return 'text-amber-600';
-  };
-
   const getPlatformIcon = (platform: ItemBerita['platform']) => {
     switch (platform) {
       case 'Instagram': return <Instagram className="h-4 w-4 text-pink-600" />;
@@ -218,7 +230,16 @@ export default function Dashboard() {
     }
   };
 
-  const handleExportPDF = () => {
+  const waitForNextFrame = () =>
+    new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+  const handleExportPDF = async () => {
+    document.documentElement.setAttribute('data-exporting-pdf', 'true');
+
+    await waitForNextFrame();
+    window.dispatchEvent(new Event('resize'));
+    await waitForNextFrame();
+
     window.print();
   };
 
