@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Proyek Next.js (Vercel Deployment Branch)
+Ini adalah proyek Next.js yang di-bootstrap menggunakan create-next-app.
 
-## Getting Started
+⚠️ Catatan Penting: Branch ini dikhususkan untuk Deployment Vercel menggunakan Data Dummy dan arsitektur Serverless. Aplikasi ini berjalan tanpa koneksi database eksternal untuk tujuan demonstrasi dan testing antarmuka.
 
-First, run the development server:
+🚀 Memulai (Getting Started)
+Pertama, jalankan development server:
 
-```bash
+Bash
+
 npm run dev
-# or
+# atau
 yarn dev
-# or
+# atau
 pnpm dev
-# or
+# atau
 bun dev
-```
+Buka http://localhost:3000 pada browser Anda untuk melihat hasilnya.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Anda dapat mulai mengedit halaman dengan memodifikasi app/page.tsx. Halaman akan diperbarui secara otomatis saat Anda menyimpan file.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Proyek ini menggunakan next/font untuk mengoptimalkan dan memuat Geist, keluarga font baru untuk Vercel.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+🛠 Struktur & Fitur Branch Ini
+Branch ini dirancang agar mudah di-deploy tanpa konfigurasi backend yang rumit:
 
-## Learn More
+Data Dummy: Semua data yang ditampilkan diambil dari file JSON statis atau hardcoded array. Tidak diperlukan setup MySQL, PostgreSQL, atau MongoDB.
 
-To learn more about Next.js, take a look at the following resources:
+Serverless Functions: Endpoint API (jika ada) berjalan menggunakan Vercel Serverless Functions untuk menyajikan data dummy tersebut.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+☁️ Deploy ke Vercel
+Cara termudah untuk men-deploy aplikasi Next.js ini adalah menggunakan Platform Vercel dari pembuat Next.js.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Langkah-langkah Deployment:
+Push kode dari branch ini ke penyedia Git Anda (GitHub, GitLab, atau Bitbucket).
 
-## Deploy on Vercel
+Masuk ke dashboard Vercel dan pilih "Add New Project".
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Import repositori yang berisi proyek ini.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Konfigurasi Build: Biarkan pengaturan default (Build command: next build, Output directory: .next).
+
+Environment Variables: Karena menggunakan data dummy, Anda tidak perlu memasukkan kredensial database apa pun.
+
+Klik Deploy.
+
+Lihat Dokumentasi Deployment Next.js untuk detail lebih lanjut.
+
+📚 Pelajari Lebih Lanjut
+Untuk mempelajari lebih lanjut tentang Next.js, lihat sumber daya berikut:
+
+Dokumentasi Next.js - pelajari fitur dan API Next.js.
+
+Learn Next.js - tutorial interaktif Next.js.
+
+Anda dapat melihat repositori GitHub Next.js - masukan dan kontribusi Anda sangat diterima!
