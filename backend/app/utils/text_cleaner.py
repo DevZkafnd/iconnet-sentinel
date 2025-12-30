@@ -52,13 +52,33 @@ def is_garbage_content(text: str) -> bool:
         
     return False
 
+import html
+import re
+
 def clean_text(text: str) -> str:
     """
-    Basic text cleaning to remove extra whitespace and newlines.
+    TRANSFORM PHASE: Cleaning
+    1. Decode HTML entities (&amp; -> &)
+    2. Remove URLs
+    3. Remove excessive emojis/repeating characters
+    4. Normalize whitespace
     """
     if not text:
         return ""
-    return " ".join(text.split())
+        
+    # 1. Decode HTML entities (e.g. &amp; -> &)
+    text = html.unescape(text)
+    
+    # 2. Remove URLs
+    text = re.sub(r'http\S+', '', text)
+    
+    # 3. Remove excessive repeating characters/emojis (e.g., "Mantap 👍👍👍" -> "Mantap 👍")
+    text = re.sub(r'(.)\1{2,}', r'\1', text)
+    
+    # 4. Remove multiple spaces
+    text = re.sub(r'\s+', ' ', text).strip()
+    
+    return text
 
 def is_relevant_content(text: str) -> bool:
     """
@@ -82,13 +102,37 @@ def is_relevant_content(text: str) -> bool:
         "joyce lanny wantannia", "nyoman ngurah widyatnya", 
         "soffin hadi", "dedi budi utomo"
     ]
+
+    # 3. Director Products (Must be paired with Company Context if generic)
+    director_products = [
+        "konektivitas mpls", "pv rooftop", "pemasaran digital", 
+        "manajemen aset", "managed service", "talent management",
+        "human capital", "green energy", "smart city"
+    ]
     
     # Check for Company Context
     has_company_context = any(k in text_lower for k in company_keywords)
     
     # Check for Director Context
     has_director_context = any(n in text_lower for n in director_names)
+
+    # Check for Product Context
+    has_product_context = any(p in text_lower for p in director_products)
     
-    # Rule: Must have either Company Context OR Director Name
-    # We don't want to rely solely on "Jaringan" or "Internet"
-    return has_company_context or has_director_context
+    # Rule: 
+    # 1. Company Context is virtually mandatory for generic products.
+    # 2. Director Name alone is enough (usually implies company context in this domain).
+    # 3. Company + Product is valid.
+    
+    if has_director_context:
+        return True
+        
+    if has_company_context:
+        # If it has company context, it's relevant. 
+        # But we can be stricter: Company AND (Product OR Director)? 
+        # User said "Icon Plus" is the target. So any Icon Plus mention is technically relevant,
+        # but to prioritize the dashboard focus, we might prefer those with product/director.
+        # For now, let's keep it broad for Company, as "Iconnet" itself is a product.
+        return True
+
+    return False

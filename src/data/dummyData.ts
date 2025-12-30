@@ -20,6 +20,13 @@ export interface DailyStat {
   label?: string;
 }
 
+export interface Comment {
+  author: string;
+  content: string;
+  sentiment: 'Positive' | 'Negative' | 'Neutral';
+  date: string;
+}
+
 export interface Post {
   id: string;
   source: string;
@@ -33,6 +40,7 @@ export interface Post {
   directorId: number;
   platform: string;
   keywords?: string[] | string;
+  comments?: Comment[];
 }
 
 export interface CompetitorData {
@@ -182,9 +190,19 @@ export const posts: Post[] = [
   // Chipta Perdana
   { id: '1', directorId: 1, title: 'ICONNET Perluas Jaringan ke 50 Kota Baru', source: 'Detik Finance', author: 'Detik Finance', description: 'PLN Icon Plus terus melakukan ekspansi jaringan internet broadband ICONNET ke berbagai daerah.', url: 'https://detik.com/finance/iconnet-50-kota', publishedAt: '2024-01-20T10:00:00Z', sentiment: 'Positive', platform: 'News' },
   { id: '2', directorId: 1, title: 'Dirut PLN Icon Plus Resmikan Kantor Baru', source: 'Kompas.com', author: 'Kompas', description: 'Kantor baru ini diharapkan dapat meningkatkan kinerja operasional perusahaan.', url: 'https://kompas.com/properti/iconplus-kantor-baru', publishedAt: '2024-01-19T14:30:00Z', sentiment: 'Positive', platform: 'News' },
-  { id: '3', directorId: 1, title: 'Internet ICONNET makin stabil, mantap pak Dirut!', source: 'Twitter', author: '@netizen_prow', description: 'Pengalaman menggunakan ICONNET selama 6 bulan terakhir sangat memuaskan.', url: 'https://twitter.com/netizen_prow/status/123', publishedAt: '2024-01-18T09:15:00Z', sentiment: 'Positive', platform: 'Twitter' },
-  { id: '4', directorId: 1, title: 'Capaian Pelanggan ICONNET Tembus 1 Juta', source: 'Investor Daily', author: 'Investor Daily', description: 'Jumlah pelanggan ICONNET mengalami peningkatan signifikan di tahun 2023.', url: 'https://investor.id/iconnet-1-juta', publishedAt: '2024-01-17T11:00:00Z', sentiment: 'Positive', platform: 'News' },
-  { id: '5', directorId: 1, title: 'Layanan internet desa makin terjangkau', source: 'Twitter', author: '@warga_desa', description: 'Terima kasih PLN Icon Plus sudah masuk ke desa kami.', url: 'https://twitter.com/warga_desa/status/456', publishedAt: '2024-01-20T08:00:00Z', sentiment: 'Positive', platform: 'Twitter' },
+  { id: '3', directorId: 1, title: 'Internet ICONNET makin stabil, mantap pak Dirut!', source: 'Twitter', author: '@netizen_prow', description: 'Pengalaman menggunakan ICONNET selama 6 bulan terakhir sangat memuaskan.', url: 'https://twitter.com/netizen_prow/status/123', publishedAt: '2024-01-18T09:15:00Z', sentiment: 'Positive', platform: 'Twitter',
+    comments: [
+      { author: '@user_happy', content: 'Setuju banget, di daerah saya juga lancar.', sentiment: 'Positive', date: '2024-01-18T09:20:00Z' },
+      { author: '@gamer_id', content: 'Ping nya kecil, enak buat main valorant.', sentiment: 'Positive', date: '2024-01-18T09:45:00Z' },
+      { author: '@skeptis_dikit', content: 'Semoga stabil terus ya, jangan awal doang.', sentiment: 'Neutral', date: '2024-01-18T10:00:00Z' }
+    ]
+  },
+  { id: '4', directorId: 1, title: 'Capaian Pelanggan ICONNET Tembus 1 Juta', source: 'Investor Daily', author: 'Investor Daily', description: 'Jumlah pelanggan ICONNET mengalami peningkatan signifikan di tahun 2023.', url: 'https://investor.id/iconnet-1-juta', publishedAt: '2024-01-17T11:00:00Z', sentiment: 'Positive', platform: 'News', comments: [] },
+  { id: '5', directorId: 1, title: 'Layanan internet desa makin terjangkau', source: 'Twitter', author: '@warga_desa', description: 'Terima kasih PLN Icon Plus sudah masuk ke desa kami.', url: 'https://twitter.com/warga_desa/status/456', publishedAt: '2024-01-20T08:00:00Z', sentiment: 'Positive', platform: 'Twitter',
+    comments: [
+      { author: '@kades_maju', content: 'Mantap, ekonomi desa bisa bangkit.', sentiment: 'Positive', date: '2024-01-20T08:10:00Z' }
+    ]
+  },
   { id: '6', directorId: 1, title: 'Inovasi Digital PLN Icon Plus Diapresiasi Menteri', source: 'CNN Indonesia', author: 'CNN Indonesia', description: 'Menteri BUMN mengapresiasi langkah transformasi digital yang dilakukan.', url: 'https://cnnindonesia.com/teknologi/inovasi-pln', publishedAt: '2024-01-20T12:00:00Z', sentiment: 'Positive', platform: 'News' },
   { id: '7', directorId: 1, title: 'Pak Chipta dorong digitalisasi UMKM', source: 'LinkedIn', author: 'Bisnis.com', description: 'Program digitalisasi UMKM menjadi salah satu prioritas utama tahun ini.', url: 'https://linkedin.com/feed/update/urn:li:activity:789', publishedAt: '2024-01-19T16:00:00Z', sentiment: 'Positive', platform: 'LinkedIn' },
   { id: '8', directorId: 1, title: 'Jaringan Fiber Optik ICONNET Makin Luas', source: 'TechAsia', author: 'TechAsia', description: 'Pembangunan infrastruktur fiber optik terus dikebut di seluruh Indonesia.', url: 'https://techasia.com/iconnet-fiber', publishedAt: '2024-01-18T13:45:00Z', sentiment: 'Positive', platform: 'News' },

@@ -14,12 +14,18 @@ SEARCH_ENGINE_ID = os.getenv("GOOGLE_SEARCH_ENGINE_ID")
 def fetch_full_content(url: str) -> str:
     """
     Uses Trafilatura to extract main text from a news URL.
+    Ensures text is clean and ready for AI analysis.
     """
     try:
         downloaded = trafilatura.fetch_url(url)
         if downloaded:
-            result = trafilatura.extract(downloaded)
-            return result if result else ""
+            # include_comments=False, include_tables=False to focus on main text
+            result = trafilatura.extract(downloaded, include_comments=False, include_tables=False, no_fallback=False)
+            if result:
+                return clean_text(result)
+            else:
+                # Fallback to bare extraction if main extraction fails
+                return trafilatura.bare_extraction(downloaded).get('text', "")
     except Exception as e:
         print(f"Error extracting content from {url}: {e}")
     return ""

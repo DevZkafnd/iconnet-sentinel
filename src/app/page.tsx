@@ -164,13 +164,24 @@ export default function Dashboard() {
             sentiment: n.sentiment_label,
             directorId: findDirectorId(n.title + " " + n.content),
             platform: "News",
-            keywords: n.highlighted_keywords || []
+            keywords: n.highlighted_keywords || [],
+            comments: []
           };
       });
 
       // Map Real Social to Post Format
       const socialPosts = realSocial.map((s: any) => {
           const dateObj = s.post_date ? new Date(s.post_date) : (s.created_at ? new Date(s.created_at) : new Date());
+          
+          // Map comments if available
+          const comments = s.comments ? s.comments.map((c: any) => ({
+              author: c.author,
+              content: c.content,
+              sentiment: c.sentiment_label,
+              date: c.created_at,
+              url: c.external_url
+          })) : [];
+
           return {
             id: `social-${s.id}`,
             source: s.platform,
@@ -183,9 +194,10 @@ export default function Dashboard() {
             sentiment: s.sentiment_label,
             directorId: findDirectorId(s.content),
             platform: s.platform,
-            keywords: s.highlighted_keywords || []
+            keywords: s.highlighted_keywords || [],
+            comments: comments
           };
-      });
+      }).filter((p: any) => p.comments && p.comments.length > 0); // Strict Filter: Only show posts with comments
 
       return [...newsPosts, ...socialPosts];
   }, [realNews, realSocial]);
@@ -916,7 +928,46 @@ export default function Dashboard() {
                                 {item.title}
                               </a>
                             </h4>
-                            <p className="text-sm text-slate-600 line-clamp-2">{item.description}</p>
+                            {/* Minimized Caption - Focus is on Comments */}
+                            <p className="text-[10px] text-slate-400 italic mb-3 line-clamp-1">
+                              Caption: {item.description}
+                            </p>
+                            
+                            {/* Comments Section - Prominent Display */}
+                            {item.comments && item.comments.length > 0 && (
+                              <div className="space-y-3">
+                                 {item.comments.slice(0, 3).map((comment: any, idx: number) => (
+                                   <a 
+                                     key={idx} 
+                                     href={comment.url || item.url} 
+                                     target="_blank" 
+                                     rel="noopener noreferrer"
+                                     className="block text-sm bg-white p-3 rounded-lg border border-slate-200 hover:border-[#005F99] transition-colors cursor-pointer group/comment shadow-sm"
+                                   >
+                                     <div className="flex items-center justify-between mb-1">
+                                       <span className="font-bold text-slate-700 group-hover/comment:text-[#005F99] transition-colors text-xs">{comment.author}</span>
+                                       <span className={cn(
+                                         "text-[10px] px-1.5 py-0 rounded-full font-medium",
+                                         comment.sentiment === 'Positive' ? "bg-emerald-100 text-emerald-700" :
+                                         comment.sentiment === 'Negative' ? "bg-red-100 text-red-700" :
+                                         "bg-slate-100 text-slate-600"
+                                       )}>
+                                         {getSentimentLabel(comment.sentiment)}
+                                       </span>
+                                     </div>
+                                     <p className="text-slate-700 group-hover/comment:text-slate-900 leading-relaxed">{comment.content}</p>
+                                   </a>
+                                 ))}
+                                 {item.comments.length > 3 && (
+                                   <div className="pt-1">
+                                     <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#005F99] font-medium hover:underline flex items-center gap-1">
+                                       <MessageSquare className="h-3 w-3" />
+                                       Lihat {item.comments.length - 3} komentar lainnya
+                                     </a>
+                                   </div>
+                                 )}
+                               </div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1206,7 +1257,46 @@ export default function Dashboard() {
                                     {item.title}
                                   </a>
                                 </h4>
-                                <p className="text-sm text-slate-600 line-clamp-2">{item.description}</p>
+                                {/* Minimized Caption - Focus is on Comments */}
+                                <p className="text-[10px] text-slate-400 italic mb-3 line-clamp-1">
+                                  Caption: {item.description}
+                                </p>
+                                
+                                {/* Comments Section - Prominent Display */}
+                                {item.comments && item.comments.length > 0 && (
+                                  <div className="space-y-3">
+                                     {item.comments.slice(0, 3).map((comment: any, idx: number) => (
+                                       <a 
+                                         key={idx} 
+                                         href={comment.url || item.url} 
+                                         target="_blank" 
+                                         rel="noopener noreferrer"
+                                         className="block text-sm bg-white p-3 rounded-lg border border-slate-200 hover:border-[#005F99] transition-colors cursor-pointer group/comment shadow-sm"
+                                       >
+                                         <div className="flex items-center justify-between mb-1">
+                                           <span className="font-bold text-slate-700 group-hover/comment:text-[#005F99] transition-colors text-xs">{comment.author}</span>
+                                           <span className={cn(
+                                             "text-[10px] px-1.5 py-0 rounded-full font-medium",
+                                             comment.sentiment === 'Positive' ? "bg-emerald-100 text-emerald-700" :
+                                             comment.sentiment === 'Negative' ? "bg-red-100 text-red-700" :
+                                             "bg-slate-100 text-slate-600"
+                                           )}>
+                                             {getSentimentLabel(comment.sentiment)}
+                                           </span>
+                                         </div>
+                                         <p className="text-slate-700 group-hover/comment:text-slate-900 leading-relaxed">{comment.content}</p>
+                                       </a>
+                                     ))}
+                                     {item.comments.length > 3 && (
+                                       <div className="pt-1">
+                                         <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#005F99] font-medium hover:underline flex items-center gap-1">
+                                           <MessageSquare className="h-3 w-3" />
+                                           Lihat {item.comments.length - 3} komentar lainnya
+                                         </a>
+                                       </div>
+                                     )}
+                                   </div>
+                                )}
                               </div>
                             </div>
                            ))

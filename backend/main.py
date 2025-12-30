@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import text
 from typing import List, Optional
 import threading
 
@@ -28,6 +29,20 @@ app.add_middleware(
 @app.on_event("startup")
 def on_startup():
     start_scheduler()
+    try:
+        with engine.connect() as conn:
+            try:
+                conn.execute(text("ALTER TABLE social_comments ADD COLUMN external_ref VARCHAR NULL;"))
+                conn.commit()
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE social_comments ADD COLUMN external_url VARCHAR NULL;"))
+                conn.commit()
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"Schema migration skipped/failed: {e}")
 
 @app.get("/")
 def read_root():
@@ -60,9 +75,9 @@ def get_social_posts(
     db: Session = Depends(get_db)
 ):
     """
-    Get paginated social media posts.
+    Get paginated social media posts with their comments.
     """
-    query = db.query(models.SocialPost)
+    query = db.query(models.SocialPost).options(joinedload(models.SocialPost.comments))
     if platform:
         query = query.filter(models.SocialPost.platform == platform)
         

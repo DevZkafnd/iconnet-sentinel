@@ -1,9 +1,12 @@
 import requests
 import os
 from ..database import SessionLocal
-from ..models.models import SocialPost
+from ..models.models import SocialPost, SocialComment
 from ..utils.ai_helper import analyze_sentiment
 from ..utils.text_cleaner import is_garbage_content, is_relevant_content
+from ..scrapers.instagram import get_instagram_comments, get_instagram_posts_by_hashtags, normalize_hashtag, get_latest_posts_from_profiles
+from ..scrapers.youtube import search_videos_by_queries, get_youtube_comments
+from ..scrapers.twitter import get_twitter_replies
 from datetime import datetime
 import re
 
@@ -49,112 +52,156 @@ SEARCH_ENGINE_ID = os.getenv("GOOGLE_SEARCH_ENGINE_ID")
 
 def run_social_worker():
     print("--- [Social Worker] Started ---")
-    
-    if not GOOGLE_API_KEY or not SEARCH_ENGINE_ID:
-        print("Google API credentials missing.")
-        return
 
     # Directors and Keywords (Updated to be more specific)
     directors = [
-        {"name": "Chipta Perdana", "keywords": ["ICONNET", "Ekspansi Jaringan", "Strategi Korporat", "Jaringan Internet", "Broadband Rumah", "Transformasi Digital"]},
-        {"name": "Aditya Syarief", "keywords": ["Perencanaan Strategis", "Pengembangan Bisnis", "Konektivitas MPLS", "Jaringan Serat Optik", "Infrastruktur Telekomunikasi", "Smart City"]},
-        {"name": "Lintje Lumembang", "keywords": ["Pelayanan TI", "Solusi Digital", "Aplikasi PLN", "Digitalisasi Layanan", "PV Rooftop", "Green Energy"]},
-        {"name": "Joyce Lanny Wantannia", "keywords": ["Pemasaran Digital", "Strategi Niaga", "Penjualan ICONNET", "Layanan Pelanggan", "Customer Experience", "Bundling Internet"]},
-        {"name": "Nyoman Ngurah Widyatnya", "keywords": ["Kinerja Keuangan", "Manajemen Risiko", "Efisiensi Biaya", "Aset Perusahaan", "Pendapatan Usaha", "Laba Perusahaan"]},
-        {"name": "Soffin Hadi", "keywords": ["Operasional Jaringan", "Managed Service", "Pemeliharaan Sistem", "Gangguan Layanan", "Service Level Agreement", "NOC"]},
-        {"name": "Dedi Budi Utomo", "keywords": ["Human Capital", "Pengembangan SDM", "Budaya Perusahaan", "Pelatihan Pegawai", "Talent Management", "Rekrutmen"]}
+        {
+            "name": "Chipta Perdana", 
+            "role": "Direktur Utama",
+            "product": "ICONNET",
+            "keywords": ["Ekspansi Jaringan", "Strategi Korporat", "Jaringan Internet", "Broadband Rumah", "Transformasi Digital"]
+        },
+        {
+            "name": "Aditya Syarief", 
+            "role": "Direktur Perencanaan & Pengembangan",
+            "product": "Konektivitas MPLS",
+            "keywords": ["Perencanaan Strategis", "Pengembangan Bisnis", "Jaringan Serat Optik", "Infrastruktur Telekomunikasi", "Smart City"]
+        },
+        {
+            "name": "Lintje Lumembang", 
+            "role": "Direktur Pelayanan TI",
+            "product": "PV Rooftop",
+            "keywords": ["Pelayanan TI", "Solusi Digital", "Aplikasi PLN", "Digitalisasi Layanan", "Green Energy"]
+        },
+        {
+            "name": "Joyce Lanny Wantannia", 
+            "role": "Direktur Niaga & Pemasaran",
+            "product": "Pemasaran Digital",
+            "keywords": ["Strategi Niaga", "Penjualan ICONNET", "Layanan Pelanggan", "Customer Experience", "Bundling Internet"]
+        },
+        {
+            "name": "Nyoman Ngurah Widyatnya", 
+            "role": "Direktur Keuangan & Man Risk",
+            "product": "Manajemen Aset",
+            "keywords": ["Kinerja Keuangan", "Manajemen Risiko", "Efisiensi Biaya", "Aset Perusahaan", "Pendapatan Usaha", "Laba Perusahaan"]
+        },
+        {
+            "name": "Soffin Hadi", 
+            "role": "Direktur Operasi",
+            "product": "Managed Service",
+            "keywords": ["Operasional Jaringan", "Pemeliharaan Sistem", "Gangguan Layanan", "Service Level Agreement", "NOC"]
+        },
+        {
+            "name": "Dedi Budi Utomo", 
+            "role": "Direktur MHC",
+            "product": "Talent Management",
+            "keywords": ["Human Capital", "Pengembangan SDM", "Budaya Perusahaan", "Pelatihan Pegawai", "Rekrutmen"]
+        }
     ]
     
-    # Base queries
-    base_queries = ["PLN Icon Plus", "ICONNET"]
-    
-    queries = []
-    # Add base queries targeted at social media
-    for q in base_queries:
-        queries.append(f'site:instagram.com OR site:facebook.com OR site:twitter.com OR site:linkedin.com "{q}"')
-        
-    # Add director queries
-    for d in directors:
-        k_str = " OR ".join([f'"{k}"' for k in d["keywords"]])
-        # site:instagram.com ... "Chipta Perdana" (Ekspansi OR ...)
-        queries.append(f'site:instagram.com OR site:facebook.com OR site:twitter.com OR site:linkedin.com "{d["name"]}" ({k_str})')
-
-    url = "https://www.googleapis.com/customsearch/v1"
+    # Focus: YouTube Comments (Limit total 5 posts, min 3 comments each)
     db = SessionLocal()
+    max_total_posts = 5
+    collected = 0
     
-    for query in queries:
-        print(f"Social Search for: {query}")
-        params = {
-            'key': GOOGLE_API_KEY,
-            'cx': SEARCH_ENGINE_ID,
-            'q': query,
-            'num': 5,
-            'sort': 'date'
-        }
+    # Build YouTube queries: company + directors + products (Indonesia scope implied)
+    base_queries = ["PLN Icon Plus", "ICONNET", "Icon Plus Indonesia", "PLN Icon Plus Indonesia"]
+    director_queries = []
+    for d in directors:
+        k_str = " ".join(d["keywords"])
+        director_queries.append(f'{d["name"]} {d["role"]} {d["product"]} {k_str}')
+    final_queries = base_queries + director_queries
+    
+    print(f"Searching YouTube videos for queries: {final_queries[:4]} ...")
+    videos = search_videos_by_queries(final_queries, max_results_total=50)
+    print(f"Found {len(videos)} videos. Processing...")
+    
+    for v in videos:
+        if collected >= max_total_posts:
+            break
         
-        try:
-            response = requests.get(url, params=params)
-            data = response.json()
+        link = v["url"]
+        title = v.get("title", "") or ""
+        username = v.get("channel", "Unknown")
+        created_at = datetime.now()
+        comments_raw = get_youtube_comments(link, max_comments=10)
+        # Strict: require at least 3 comments
+        comments = [c for c in comments_raw if c.get("content")][:10]
+        
+        print(f"Video: {title[:30]}... | Comments: {len(comments)}")
+
+        if len(comments) < 3:
+            continue
+        
+        # Duplicate check
+        if db.query(SocialPost).filter(SocialPost.original_url == link).first():
+            continue
+        
+        # Strict relevance
+        context_text = f"{title} {username}"
+        if not is_relevant_content(context_text):
+            pass
             
-            if 'items' not in data:
+        # Create post (YouTube video title as content; komentar disimpan di bawah)
+        ai_result = analyze_sentiment(title[:1000])
+        post = SocialPost(
+            platform="YouTube",
+            author=username,
+            content=title,
+            original_url=link,
+            post_date=created_at,
+            sentiment_score=ai_result['sentiment_score'],
+            sentiment_label=ai_result['sentiment_label'],
+            confidence_level=ai_result['confidence_level'],
+            highlighted_keywords=ai_result['highlighted_keywords']
+        )
+        
+        db.add(post)
+        db.commit()
+        db.refresh(post)
+        
+        # Strict: keep only if comments exist
+        if not comments:
+            db.delete(post)
+            db.commit()
+            continue
+        
+        comment_sentiments = []
+        for c in comments:
+            c_content = c.get("content", "")
+            if not c_content:
                 continue
-
-            for item in data['items']:
-                link = item.get('link')
-                
-                # Check duplicates
-                if db.query(SocialPost).filter(SocialPost.original_url == link).first():
-                    continue
-                
-                title = item.get('title')
-                snippet = item.get('snippet')
-                
-                # Determine platform
-                platform = "Unknown"
-                if "instagram.com" in link: platform = "Instagram"
-                elif "facebook.com" in link: platform = "Facebook"
-                elif "twitter.com" in link or "x.com" in link: platform = "Twitter"
-                elif "linkedin.com" in link: platform = "LinkedIn"
-                
-                # Filter out profile/generic links
-                if not is_valid_post_url(link, platform):
-                    print(f"Skipping generic/profile URL: {link}")
-                    continue
-
-                # Use snippet as content since scraping social media is hard without auth
-                content = f"{title}. {snippet}"
-                
-                # Check for garbage content (e.g. JS errors)
-                if is_garbage_content(content):
-                    print(f"Skipping garbage content: {link}")
-                    continue
-                    
-                # Strict Relevance Check
-                if not is_relevant_content(content):
-                    print(f"Skipping irrelevant social content: {content[:30]}...")
-                    continue
-                
-                # AI Analysis
-                ai_result = analyze_sentiment(content)
-                
-                post = SocialPost(
-                    platform=platform,
-                    author="Unknown", # Hard to extract from search result reliably
-                    content=content,
-                    original_url=link,
-                    post_date=datetime.now(), # Default to collection time
-                    sentiment_score=ai_result['sentiment_score'],
-                    sentiment_label=ai_result['sentiment_label'],
-                    confidence_level=ai_result['confidence_level'],
-                    highlighted_keywords=ai_result['highlighted_keywords']
-                )
-                
-                db.add(post)
-                db.commit()
-                print(f"Saved Social Post: {link}")
-                
-        except Exception as e:
-            print(f"Error in Social Worker for {query}: {e}")
+            c_ai = analyze_sentiment(c_content)
+            comment_sentiments.append(c_ai['sentiment_score'])
             
+            new_comment = SocialComment(
+                social_post_id=post.id,
+                author=c.get("author", "Unknown"),
+                content=c_content,
+                created_at=datetime.now(),
+                sentiment_label=c_ai['sentiment_label'],
+                sentiment_score=c_ai['sentiment_score']
+            )
+            # Attempt to set external reference (commentId) and URL if schema supports it
+            try:
+                setattr(new_comment, "external_ref", c.get("external_ref"))
+                setattr(new_comment, "external_url", c.get("external_url"))
+            except Exception:
+                pass
+            db.add(new_comment)
+        
+        if comment_sentiments:
+            avg_score = sum(comment_sentiments) / len(comment_sentiments)
+            post.sentiment_score = avg_score
+            if avg_score >= 0.05:
+                post.sentiment_label = "Positive"
+            elif avg_score <= -0.05:
+                post.sentiment_label = "Negative"
+            else:
+                post.sentiment_label = "Neutral"
+        
+        db.commit()
+        collected += 1
+    
     db.close()
-    print("--- [Social Worker] Finished ---")
+    print(f"--- [Social Worker] Finished (YouTube Mode, saved {collected} posts) ---")

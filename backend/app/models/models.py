@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Float, Text, JSON, DateTime
+from sqlalchemy import Column, Integer, String, Float, Text, JSON, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..database import Base
 
@@ -37,3 +38,22 @@ class SocialPost(Base):
     highlighted_keywords = Column(JSON)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationship
+    comments = relationship("SocialComment", back_populates="post", cascade="all, delete-orphan")
+
+class SocialComment(Base):
+    __tablename__ = "social_comments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    social_post_id = Column(Integer, ForeignKey("social_posts.id"))
+    author = Column(String)
+    content = Column(Text)
+    created_at = Column(DateTime(timezone=True))
+    
+    sentiment_label = Column(String) # Positive, Negative, Neutral
+    sentiment_score = Column(Float)
+    external_ref = Column(String)  # e.g., YouTube commentId
+    external_url = Column(String)  # direct URL to specific comment if available
+
+    post = relationship("SocialPost", back_populates="comments")
