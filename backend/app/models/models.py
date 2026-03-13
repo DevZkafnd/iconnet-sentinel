@@ -37,6 +37,10 @@ class SocialPost(Base):
     confidence_level = Column(String)
     highlighted_keywords = Column(JSON)
     
+    # Classification columns
+    director = Column(String, nullable=True)
+    product = Column(String, nullable=True)
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationship

@@ -6,11 +6,40 @@ from ..utils.ai_helper import analyze_sentiment
 from ..utils.text_cleaner import is_garbage_content, is_relevant_content
 from ..scrapers.instagram import get_instagram_comments, get_instagram_posts_by_hashtags, normalize_hashtag, get_latest_posts_from_profiles
 from ..scrapers.youtube import search_videos_by_queries, get_youtube_comments
+from ..scrapers.tiktok import search_videos as search_tiktok_videos, get_tiktok_comments
 from ..scrapers.twitter import get_twitter_replies
 from datetime import datetime
 import re
+import asyncio
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+def classify_content(text: str, directors_data: list):
+    """
+    Classify content into Director and Product based on keywords.
+    """
+    if not text:
+        return None, None
+        
+    text_lower = text.lower()
+    
+    # Priority 1: Director Name
+    for d in directors_data:
+        if d["name"].lower() in text_lower:
+            return d["name"], d["product"]
+            
+    # Priority 2: Product Name
+    for d in directors_data:
+        if d["product"].lower() in text_lower:
+            return d["name"], d["product"]
+            
+    # Priority 3: Keywords
+    for d in directors_data:
+        for k in d["keywords"]:
+            if k.lower() in text_lower:
+                return d["name"], d["product"]
+                
+    return None, None
 
 def is_valid_post_url(url: str, platform: str) -> bool:
     """
@@ -142,6 +171,9 @@ def run_social_worker():
         if not is_relevant_content(context_text):
             pass
             
+        # Classify Director/Product
+        director_name, product_name = classify_content(title, directors)
+
         # Create post (YouTube video title as content; komentar disimpan di bawah)
         ai_result = analyze_sentiment(title[:1000])
         post = SocialPost(
@@ -153,7 +185,9 @@ def run_social_worker():
             sentiment_score=ai_result['sentiment_score'],
             sentiment_label=ai_result['sentiment_label'],
             confidence_level=ai_result['confidence_level'],
-            highlighted_keywords=ai_result['highlighted_keywords']
+            highlighted_keywords=ai_result['highlighted_keywords'],
+            director=director_name,
+            product=product_name
         )
         
         db.add(post)
@@ -202,6 +236,112 @@ def run_social_worker():
         
         db.commit()
         collected += 1
+
+    # --- TIKTOK SECTION ---
+    print("--- [Social Worker] Starting TikTok Scraping ---")
+    
+    async def process_tiktok():
+        tiktok_collected = 0
+        tiktok_target = 3
+        
+        # Use broad queries
+        queries = ["ICONNET", "PLN Icon Plus"]
+        seen_urls = set()
+        
+        for query in queries:
+            if tiktok_collected >= tiktok_target:
+                break
+                
+            print(f"[TikTok Worker] Searching for: {query}")
+            try:
+                # Search videos (Get top 20 to find high engagement ones)
+                video_urls = await search_tiktok_videos(query, max_results=20)
+                
+                for link in video_urls:
+                    if tiktok_collected >= tiktok_target:
+                        break
+                    if link in seen_urls:
+                        continue
+                    seen_urls.add(link)
+                    
+                    # Duplicate check
+                    if db.query(SocialPost).filter(SocialPost.original_url == link).first():
+                        print(f"[TikTok Worker] Skipping duplicate: {link}")
+                        continue
+                        
+                    # Get Comments (Check priority)
+                    comments_data = await get_tiktok_comments(link, max_comments=20)
+                    
+                    if not comments_data:
+                        print(f"[TikTok Worker] No comments for {link}, skipping (Priority Rule).")
+                        continue
+                        
+                    print(f"[TikTok Worker] Found {len(comments_data)} comments for {link}. Processing...")
+                    
+                    title = f"TikTok Video: {query}" 
+                    
+                    # Classify based on comments content + query
+                    full_text = f"{title} " + " ".join([c.get('text', '') for c in comments_data])
+                    director_name, product_name = classify_content(full_text, directors)
+                    
+                    # Analyze Sentiment
+                    ai_result = analyze_sentiment(full_text[:1000])
+                    
+                    post = SocialPost(
+                        platform="TikTok",
+                        author="Unknown", 
+                        content=title,
+                        original_url=link,
+                        post_date=datetime.now(),
+                        sentiment_score=ai_result['sentiment_score'],
+                        sentiment_label=ai_result['sentiment_label'],
+                        confidence_level=ai_result['confidence_level'],
+                        highlighted_keywords=ai_result['highlighted_keywords'],
+                        director=director_name,
+                        product=product_name
+                    )
+                    
+                    db.add(post)
+                    db.commit()
+                    db.refresh(post)
+                    
+                    # Save Comments
+                    comment_sentiments = []
+                    for c in comments_data:
+                        c_text = c.get("text", "")
+                        if not c_text: continue
+                        
+                        c_ai = analyze_sentiment(c_text)
+                        comment_sentiments.append(c_ai['sentiment_score'])
+                        
+                        new_comment = SocialComment(
+                            social_post_id=post.id,
+                            author=c.get("username", "Unknown"),
+                            content=c_text,
+                            created_at=datetime.now(),
+                            sentiment_label=c_ai['sentiment_label'],
+                            sentiment_score=c_ai['sentiment_score']
+                        )
+                        db.add(new_comment)
+                        
+                    # Update Post Sentiment
+                    if comment_sentiments:
+                        avg = sum(comment_sentiments) / len(comment_sentiments)
+                        post.sentiment_score = avg
+                        if avg >= 0.05: post.sentiment_label = "Positive"
+                        elif avg <= -0.05: post.sentiment_label = "Negative"
+                        else: post.sentiment_label = "Neutral"
+                        
+                    db.commit()
+                    tiktok_collected += 1
+                    
+            except Exception as e:
+                print(f"[TikTok Worker] Error processing query {query}: {e}")
+                
+    try:
+        asyncio.run(process_tiktok())
+    except Exception as e:
+        print(f"[TikTok Worker] Fatal error: {e}")
     
     db.close()
-    print(f"--- [Social Worker] Finished (YouTube Mode, saved {collected} posts) ---")
+    print(f"--- [Social Worker] Finished (YouTube + TikTok) ---")

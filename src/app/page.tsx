@@ -57,6 +57,7 @@ import {
   corporateStats, 
   competitorAnalysis, 
   topIssues, 
+  posts,
   Director, 
   Post 
 } from '@/data/dummyData';
@@ -65,6 +66,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
 export default function Dashboard() {
+  const [mounted, setMounted] = useState(false);
   const [language, setLanguage] = useState<'id' | 'en'>('id');
   const [isExporting, setIsExporting] = useState(false);
   const t = translations[language];
@@ -104,26 +106,34 @@ export default function Dashboard() {
 
   // Fetch Data from Backend
   useEffect(() => {
+    setMounted(true);
     const fetchData = async () => {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       console.log("Fetching data from:", API_URL);
       
       try {
         const [newsRes, socialRes, statsRes] = await Promise.all([
-          fetch(`${API_URL}/api/news`),
-          fetch(`${API_URL}/api/social`),
-          fetch(`${API_URL}/api/stats`)
+          fetch(`${API_URL}/api/news`).catch(e => { console.error("News fetch failed", e); return null; }),
+          fetch(`${API_URL}/api/social`).catch(e => { console.error("Social fetch failed", e); return null; }),
+          fetch(`${API_URL}/api/stats`).catch(e => { console.error("Stats fetch failed", e); return null; })
         ]);
 
-        const news = await newsRes.json();
-        const social = await socialRes.json();
-        const stats = await statsRes.json();
+        if (newsRes && newsRes.ok) {
+          const news = await newsRes.json();
+          setRealNews(news);
+        }
+        
+        if (socialRes && socialRes.ok) {
+          const social = await socialRes.json();
+          setRealSocial(social);
+        }
 
-        setRealNews(news);
-        setRealSocial(social);
-        setRealStats(stats);
+        if (statsRes && statsRes.ok) {
+          const stats = await statsRes.json();
+          setRealStats(stats);
+        }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error in fetchData:", error);
       }
     };
 
@@ -197,30 +207,32 @@ export default function Dashboard() {
             keywords: s.highlighted_keywords || [],
             comments: comments
           };
-      }).filter((p: any) => p.comments && p.comments.length > 0); // Strict Filter: Only show posts with comments
+      });
 
-      return [...newsPosts, ...socialPosts];
+      // Dummy posts from dummyData.ts
+      const mappedDummyPosts = posts.map(p => ({
+          ...p,
+          rawDate: new Date(p.publishedAt).getTime(),
+          publishedAt: p.publishedAt.replace('T', ' ').substring(0, 16)
+      }));
+
+      return [...mappedDummyPosts, ...newsPosts, ...socialPosts];
   }, [realNews, realSocial]);
 
   const directorFilteredPosts = useMemo(() => {
-    if (!selectedDirector) return [];
+    if (!selectedDirector) return combinedPosts;
     return combinedPosts.filter(post => 
         post.directorId === selectedDirector.id || post.directorId === 0
     );
   }, [selectedDirector, combinedPosts]);
 
-  // Use Real Stats if available, otherwise fallback to zeros
-  const displayStats = realStats ? {
+  // Use Real Stats if available, otherwise fallback to dummy data
+  const displayStats = (realStats && realStats.total_mentions > 0) ? {
       totalMentions: realStats.total_mentions,
       sentimentScore: 75, // Placeholder logic
       potentialReach: "N/A",
       mentionChange: 0
-  } : {
-      totalMentions: 0,
-      sentimentScore: 0,
-      potentialReach: "0",
-      mentionChange: 0
-  };
+  } : corporateStats;
 
   const corporateNewsList = useMemo(() => {
     let filtered = [...combinedPosts];
@@ -237,9 +249,13 @@ export default function Dashboard() {
     if (selectedPlatform !== 'all') {
       const newsPlatforms = ['News', 'Intranet', 'Internal'];
       if (selectedPlatform === 'news') {
-         filtered = filtered.filter(item => newsPlatforms.includes(item.platform));
+         filtered = filtered.filter(item => 
+           item.platform && newsPlatforms.some(np => item.platform.toLowerCase() === np.toLowerCase())
+         );
       } else {
-         filtered = filtered.filter(item => !newsPlatforms.includes(item.platform));
+         filtered = filtered.filter(item => 
+           item.platform && !newsPlatforms.some(np => item.platform.toLowerCase() === np.toLowerCase())
+         );
       }
     }
 
@@ -294,29 +310,37 @@ export default function Dashboard() {
     
     // Use corporateNewsList (filtered) or combinedPosts (unfiltered) depending on desired behavior.
     // Usually trend charts reflect the current filter context.
-    corporateNewsList.forEach(post => {
+    // We must ensure we have a fallback if list is empty.
+    const sourceList = corporateNewsList.length > 0 ? corporateNewsList : combinedPosts;
+
+    sourceList.forEach(post => {
+        if (!post.publishedAt) return;
         // publishedAt format: "YYYY-MM-DD HH:mm"
         const dateStr = post.publishedAt.split(' ')[0]; 
         if (!rawGrouped[dateStr]) {
             rawGrouped[dateStr] = { date: dateStr, positive: 0, negative: 0, neutral: 0 };
         }
-        const sentiment = post.sentiment.toLowerCase();
+        const sentiment = (post.sentiment || 'Neutral').toLowerCase();
         if (sentiment === 'positive') rawGrouped[dateStr].positive++;
         else if (sentiment === 'negative') rawGrouped[dateStr].negative++;
         else rawGrouped[dateStr].neutral++;
     });
 
-    // If empty (no data), maybe return some empty placeholders or just empty array
+    // If empty (no data), return empty array
     if (Object.keys(rawGrouped).length === 0) return [];
 
     // Sort by date and format
     return Object.values(rawGrouped)
         .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .map((item: any) => ({
-            ...item,
-            name: new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
-        }));
-  }, [corporateNewsList]);
+        .map((item: any) => {
+            const dateObj = new Date(item.date);
+            return {
+                ...item,
+                count: item.positive + item.negative + item.neutral,
+                name: `${dateObj.getDate()}/${dateObj.getMonth() + 1}`
+            };
+        });
+  }, [corporateNewsList, combinedPosts]);
 
   // 2. Dynamic Top Issues (Keywords)
   const computedTopIssues = useMemo(() => {
@@ -785,9 +809,11 @@ export default function Dashboard() {
                     <MessageSquare className="h-4 w-4 text-[#00AEEF]" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-[#005F99]">{corporateStats.totalMentions.toLocaleString()}</div>
+                    <div className="text-3xl font-bold text-[#005F99]" suppressHydrationWarning>
+                      {displayStats.totalMentions.toLocaleString()}
+                    </div>
                     <p className="text-xs text-slate-500 mt-1">
-                      <span className="text-emerald-600 font-medium">+{corporateStats.mentionChange}%</span> {t.kpiMentionsDesc}
+                      <span className="text-emerald-600 font-medium">+{displayStats.mentionChange}%</span> {t.kpiMentionsDesc}
                     </p>
                   </CardContent>
                 </Card>
@@ -797,7 +823,9 @@ export default function Dashboard() {
                     <Activity className="h-4 w-4 text-[#00AEEF]" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-[#005F99]">{corporateStats.sentimentScore}%</div>
+                    <div className="text-3xl font-bold text-[#005F99]" suppressHydrationWarning>
+                      {displayStats.sentimentScore}%
+                    </div>
                     <p className="text-xs text-slate-500 mt-1">{t.kpiSentimentDesc}</p>
                   </CardContent>
                 </Card>
@@ -807,7 +835,9 @@ export default function Dashboard() {
                     <Users className="h-4 w-4 text-[#00AEEF]" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-[#005F99]">{corporateStats.potentialReach}</div>
+                    <div className="text-3xl font-bold text-[#005F99]" suppressHydrationWarning>
+                      {displayStats.potentialReach}
+                    </div>
                     <p className="text-xs text-slate-500 mt-1">{t.kpiReachDesc}</p>
                   </CardContent>
                 </Card>
@@ -821,21 +851,23 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="chart-wrapper h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200} debounce={200}>
-                        <AreaChart data={trendData}>
-                          <defs>
-                            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#00AEEF" stopOpacity={0.1}/>
-                              <stop offset="95%" stopColor="#00AEEF" stopOpacity={0}/>
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                          <XAxis dataKey="date" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                          <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                          <Tooltip contentStyle={{ borderRadius: '8px' }} />
-                          <Area type="monotone" dataKey="count" stroke="#00AEEF" fill="url(#colorValue)" strokeWidth={2} isAnimationActive={false} />
-                        </AreaChart>
-                      </ResponsiveContainer>
+                      {mounted && (
+                        <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200} debounce={200}>
+                          <AreaChart data={trendData}>
+                            <defs>
+                              <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#00AEEF" stopOpacity={0.1}/>
+                                <stop offset="95%" stopColor="#00AEEF" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                            <Tooltip contentStyle={{ borderRadius: '8px' }} />
+                            <Area type="monotone" dataKey="count" stroke="#00AEEF" fill="url(#colorValue)" strokeWidth={2} isAnimationActive={false} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -847,26 +879,28 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="chart-wrapper h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200} debounce={200}>
-                        <PieChart>
-                          <Pie
-                            data={sentimentCounts}
-                            cx="50%"
-                            cy="45%"
-                            innerRadius={80}
-                            outerRadius={110}
-                            paddingAngle={5}
-                            dataKey="value"
-                            isAnimationActive={false}
-                          >
-                            {sentimentCounts.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                          <Legend verticalAlign="bottom" height={48} wrapperStyle={{ paddingTop: '20px' }} />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      {mounted && (
+                        <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200} debounce={200}>
+                          <PieChart>
+                            <Pie
+                              data={sentimentCounts}
+                              cx="50%"
+                              cy="45%"
+                              innerRadius={80}
+                              outerRadius={110}
+                              paddingAngle={5}
+                              dataKey="value"
+                              isAnimationActive={false}
+                            >
+                              {sentimentCounts.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                            <Legend verticalAlign="bottom" height={48} wrapperStyle={{ paddingTop: '20px' }} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

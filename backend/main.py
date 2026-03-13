@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import text
+from sqlalchemy import text, func
 from typing import List, Optional
 import threading
 
@@ -38,6 +38,16 @@ def on_startup():
                 pass
             try:
                 conn.execute(text("ALTER TABLE social_comments ADD COLUMN external_url VARCHAR NULL;"))
+                conn.commit()
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE social_posts ADD COLUMN director VARCHAR NULL;"))
+                conn.commit()
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE social_posts ADD COLUMN product VARCHAR NULL;"))
                 conn.commit()
             except Exception:
                 pass
@@ -96,6 +106,20 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     pos_news = db.query(models.NewsArticle).filter(models.NewsArticle.sentiment_label == "Positive").count()
     neg_news = db.query(models.NewsArticle).filter(models.NewsArticle.sentiment_label == "Negative").count()
     
+    # Director Breakdown (Social Only for now)
+    director_stats = {}
+    directors_query = db.query(models.SocialPost.director, func.count(models.SocialPost.id)).group_by(models.SocialPost.director).all()
+    for d, count in directors_query:
+        if d:
+            director_stats[d] = count
+            
+    # Product Breakdown (Social Only for now)
+    product_stats = {}
+    products_query = db.query(models.SocialPost.product, func.count(models.SocialPost.id)).group_by(models.SocialPost.product).all()
+    for p, count in products_query:
+        if p:
+            product_stats[p] = count
+
     return {
         "total_mentions": total_news + total_social,
         "total_news": total_news,
@@ -104,7 +128,9 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
             "positive": pos_news,
             "negative": neg_news,
             "neutral": total_news - (pos_news + neg_news)
-        }
+        },
+        "director_breakdown": director_stats,
+        "product_breakdown": product_stats
     }
 
 # --- TRIGGER ENDPOINTS (For Manual Testing) ---
